@@ -166,14 +166,9 @@ cd_vrfy $workdir
 #
 varmap_file=""
 
-case "${CCPP_PHYS_SUITE}" in
-#
-  "FV3_GFS_2017_gfdlmp" | \
-  "FV3_GFS_2017_gfdlmp_regional" | \
-  "FV3_GFS_v16beta" | \
-  "FV3_GFS_v15p2" | "FV3_CPT_v0" )
-    varmap_file="GFSphys_var_map.txt"
-    ;;
+phys_suite=${SUITES[$(( 10#${ENSMEM_INDX}-1 ))]}
+varmap_file="GFSphys_var_map.txt"
+case "${phys_suite}" in
 #
   "FV3_GSD_v0" | \
   "FV3_GSD_SAR" | \
@@ -190,12 +185,12 @@ case "${CCPP_PHYS_SUITE}" in
     fi
     ;;
 #
-  *)
-  print_err_msg_exit "\
-The variable \"varmap_file\" has not yet been specified for this physics
-suite (CCPP_PHYS_SUITE):
-  CCPP_PHYS_SUITE = \"${CCPP_PHYS_SUITE}\""
-  ;;
+#  *)
+#  print_err_msg_exit "\
+#The variable \"varmap_file\" has not yet been specified for this physics
+#suite (phys_suite):
+#  phys_suite = \"${phys_suite}\""
+#  ;;
 #
 esac
 #

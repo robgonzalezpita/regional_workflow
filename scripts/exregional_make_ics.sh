@@ -166,14 +166,9 @@ cd_vrfy $workdir
 #
 varmap_file=""
 
-case "${CCPP_PHYS_SUITE}" in
-#
-  "FV3_GFS_2017_gfdlmp" | \
-  "FV3_GFS_2017_gfdlmp_regional" | \
-  "FV3_GFS_v16beta" | \
-  "FV3_GFS_v15p2" | "FV3_CPT_v0" )
-    varmap_file="GFSphys_var_map.txt"
-    ;;
+phys_suite=${SUITES[$(( 10#${ENSMEM_INDX}-1 ))]}
+varmap_file="GFSphys_var_map.txt"
+case "${phys_suite}" in
 #
   "FV3_GSD_v0" | \
   "FV3_GSD_SAR" | \
@@ -190,12 +185,12 @@ case "${CCPP_PHYS_SUITE}" in
     fi
     ;;
 #
-  *)
-    print_err_msg_exit "\
-The variable \"varmap_file\" has not yet been specified for this physics
-suite (CCPP_PHYS_SUITE):
-  CCPP_PHYS_SUITE = \"${CCPP_PHYS_SUITE}\""
-    ;;
+#  *)
+#    print_err_msg_exit "\
+#The variable \"varmap_file\" has not yet been specified for this physics
+#suite (phys_suite):
+#  phys_suite = \"${phys_suite}\""
+#    ;;
 #
 esac
 #
@@ -337,6 +332,8 @@ if [ "${THOMPSON_MP_USED}" = "TRUE" ] && \
   thomp_mp_climo_file="${THOMPSON_MP_CLIMO_FP}"
 fi
 
+thomp_mp_climo_file="${THOMPSON_MP_CLIMO_FP}"
+
 case "${EXTRN_MDL_NAME_ICS}" in
 
 "GSMGFS")
@@ -401,23 +398,23 @@ case "${EXTRN_MDL_NAME_ICS}" in
 #
 # Set soil levels based on LSM in CCPP SDF (RUC-LSM or Noah/Noah MP).
 #
-  if [ "${CCPP_PHYS_SUITE}" = "FV3_GFS_2017_gfdlmp" ] || \
-     [ "${CCPP_PHYS_SUITE}" = "FV3_GFS_2017_gfdlmp_regional" ] || \
-     [ "${CCPP_PHYS_SUITE}" = "FV3_CPT_v0" ] || \
-     [ "${CCPP_PHYS_SUITE}" = "FV3_GFS_v15p2" ] || \
-     [ "${CCPP_PHYS_SUITE}" = "FV3_GFS_v16beta" ] || \
-     [ "${CCPP_PHYS_SUITE}" = "FV3_RRFS_v1alpha" ] || \
-     [ "${CCPP_PHYS_SUITE}" = "FV3_RRFS_v1beta" ]; then
+  if [ "${phys_suite}" = "FV3_GFS_2017_gfdlmp" ] || \
+     [ "${phys_suite}" = "FV3_GFS_2017_gfdlmp_regional" ] || \
+     [ "${phys_suite}" = "FV3_CPT_v0" ] || \
+     [ "${phys_suite}" = "FV3_GFS_v15p2" ] || \
+     [ "${phys_suite}" = "FV3_GFS_v16beta" ] || \
+     [ "${phys_suite}" = "FV3_RRFS_v1alpha" ] || \
+     [ "${phys_suite}" = "FV3_RRFS_v1beta" ]; then
     nsoill_out="4"
-  elif [ "${CCPP_PHYS_SUITE}" = "FV3_GSD_v0" ] || \
-       [ "${CCPP_PHYS_SUITE}" = "FV3_GSD_SAR" ]; then
+  elif [ "${phys_suite}" = "FV3_GSD_v0" ] || \
+       [ "${phys_suite}" = "FV3_GSD_SAR" ]; then
     nsoill_out="9"
   else
     print_err_msg_exit "\
 The variable \"nsoill_out\" has not yet been specified for this external
-IC model (EXTRN_MDL_NAME_ICS) and physics suite (CCPP_PHYS_SUITE) combination:
+IC model (EXTRN_MDL_NAME_ICS) and physics suite (phys_suite) combination:
   EXTRN_MDL_NAME_ICS = \"${EXTRN_MDL_NAME_ICS}\"
-  CCPP_PHYS_SUITE = \"${CCPP_PHYS_SUITE}\""
+  phys_suite = \"${phys_suite}\""
   fi
 #
 # Path to the HRRRX geogrid file.
@@ -441,23 +438,23 @@ IC model (EXTRN_MDL_NAME_ICS) and physics suite (CCPP_PHYS_SUITE) combination:
 #
 # Set soil levels based on CCPP SDF.
 #
-  if [ "${CCPP_PHYS_SUITE}" = "FV3_GFS_2017_gfdlmp" ] || \
-     [ "${CCPP_PHYS_SUITE}" = "FV3_GFS_2017_gfdlmp_regional" ] || \
-     [ "${CCPP_PHYS_SUITE}" = "FV3_CPT_v0" ] || \
-     [ "${CCPP_PHYS_SUITE}" = "FV3_GFS_v15p2" ] || \
-     [ "${CCPP_PHYS_SUITE}" = "FV3_GFS_v16beta" ] || \
-     [ "${CCPP_PHYS_SUITE}" = "FV3_RRFS_v1alpha" ] || \
-     [ "${CCPP_PHYS_SUITE}" = "FV3_RRFS_v1beta" ]; then
+  if [ "${phys_suite}" = "FV3_GFS_2017_gfdlmp" ] || \
+     [ "${phys_suite}" = "FV3_GFS_2017_gfdlmp_regional" ] || \
+     [ "${phys_suite}" = "FV3_CPT_v0" ] || \
+     [ "${phys_suite}" = "FV3_GFS_v15p2" ] || \
+     [ "${phys_suite}" = "FV3_GFS_v16beta" ] || \
+     [ "${phys_suite}" = "FV3_RRFS_v1alpha" ] || \
+     [ "${phys_suite}" = "FV3_RRFS_v1beta" ]; then
     nsoill_out="4"
-  elif [ "${CCPP_PHYS_SUITE}" = "FV3_GSD_v0" ] || \
-       [ "${CCPP_PHYS_SUITE}" = "FV3_GSD_SAR" ]; then
+  elif [ "${phys_suite}" = "FV3_GSD_v0" ] || \
+       [ "${phys_suite}" = "FV3_GSD_SAR" ]; then
     nsoill_out="9"
   else
     print_err_msg_exit "\
 The variable \"nsoill_out\" has not yet been specified for this external
-IC model (EXTRN_MDL_NAME_ICS) and physics suite (CCPP_PHYS_SUITE) combination:
+IC model (EXTRN_MDL_NAME_ICS) and physics suite (phys_suite) combination:
   EXTRN_MDL_NAME_ICS = \"${EXTRN_MDL_NAME_ICS}\"
-  CCPP_PHYS_SUITE = \"${CCPP_PHYS_SUITE}\""
+  phys_suite = \"${phys_suite}\""
   fi
 #
 # Path to the RAPX geogrid file.

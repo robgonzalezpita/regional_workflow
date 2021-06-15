@@ -51,7 +51,6 @@ ushdir="${scrfunc_dir}"
 #
 . $ushdir/source_util_funcs.sh
 . $ushdir/set_FV3nml_sfc_climo_filenames.sh
-. $ushdir/set_FV3nml_stoch_params.sh
 #
 #-----------------------------------------------------------------------
 #
@@ -242,7 +241,8 @@ settings="\
   'maxtries_run_fcst': ${MAXTRIES_RUN_FCST}
   'maxtries_run_post': ${MAXTRIES_RUN_POST}
 #
-# Flags that specify whether to run the preprocessing tasks.
+# Flags that specify whether to run the preprocessing or
+# verification-related tasks.
 #
   'run_task_make_grid': ${RUN_TASK_MAKE_GRID}
   'run_task_make_orog': ${RUN_TASK_MAKE_OROG}
@@ -573,6 +573,7 @@ for (( suite=0; suite<${#SUITES[@]}; suite++ )); do
       'sppt': ${SPPT_MAG},
       'sppt_lscale': ${SPPT_LSCALE},
       'sppt_tau': ${SPPT_TSCALE},
+      'sppt_sfclimit': ${SPPT_SFCLIMIT},
       'spptint': ${SPPT_INT},
       'skeb': ${SKEB_MAG},
       'skeb_lscale': ${SKEB_LSCALE},
@@ -698,12 +699,9 @@ for (( suite=0; suite<${#SUITES[@]}; suite++ )); do
 done # Namelist generation loop over physics suites
 
 
-if [ "${DO_ENSEMBLE}" = TRUE ]; then
-  set_FV3nml_stoch_params || print_err_msg_exit "\
-Call to function to set stochastic parameters in the FV3 namelist files
-for the various ensemble members failed."
-
-fi
+  set_FV3nml_sfc_climo_filenames || print_err_msg_exit "\
+Call to function to set surface climatology file names in the FV3 namelist
+file failed."
 
 #
 #-----------------------------------------------------------------------

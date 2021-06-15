@@ -1278,7 +1278,7 @@ for suite in ${SUITES[@]} ; do
   #-----------------------------------------------------------------------
   #
   CCPP_PHYS_SUITE_FN="suite_${suite}.xml"
-  CCPP_PHYS_SUITE_IN_CCPP_FP+=("${TEMPLATE_DIR}/suites/${CCPP_PHYS_SUITE_FN}")
+  CCPP_PHYS_SUITE_IN_CCPP_FP+=("${UFS_WTHR_MDL_DIR}/FV3/ccpp/suites/${CCPP_PHYS_SUITE_FN}")
   CCPP_PHYS_SUITE_FP+=("${EXPTDIR}/${CCPP_PHYS_SUITE_FN}")
   if [ ! -f "${CCPP_PHYS_SUITE_IN_CCPP_FP[-1]}" ]; then
     print_err_msg_exit "\

@@ -12,10 +12,11 @@ RUN_CMD_POST="srun --mpi=pmi2"
 
 NCORES_PER_NODE="36"
 PPN_RUN_FCST="18"
-LAYOUT_X="18"
+LAYOUT_X="36"
 LAYOUT_Y="36"
+BLOCKSIZE="35"
 WRTCMP_write_groups="1"
-WRTCMP_write_tasks_per_group="72"
+WRTCMP_write_tasks_per_group="144"
 
 PARTITION_DEFAULT=
 QUEUE_DEFAULT=
@@ -29,7 +30,7 @@ BUILD_ENV_FN="build_aws_intel.env"
 
 # Copied directly from setup.sh HERA settings
 DO_ENSEMBLE="TRUE"
-NUM_ENS_MEMBERS="2"
+NUM_ENS_MEMBERS="3"
 NDIGITS_ENSMEM_NAMES="2"
 
 # Get external model files staged on disk
@@ -45,6 +46,8 @@ EXTRN_MDL_NAME_ICS="GEFS"
 EXTRN_MDL_NAME_LBCS="GEFS"
 
 GEFS_MEMBER=01
+DO_SPPT=TRUE
+SPPT_MAG=0.6
 
 RUN_ENVIR="nco"
 envir="para"
@@ -52,8 +55,7 @@ PREEXISTING_DIR_METHOD="rename"
 
 QUILTING="TRUE"
 
-CCPP_PHYS_SUITE="FV3_GSD_SAR"
-SUITES=( FV3_GFS_v15_thompson_mynn rrfs_gfsv16 )
+SUITES=( FV3_GFS_v15_thompson_mynn rrfs_gfsv16 nssl_mp_no_nsst )
 FCST_LEN_HRS="3"
 LBC_SPEC_INTVL_HRS="3"
 
@@ -74,4 +76,3 @@ FIXgsm=${FIXgsm:-"/lustre/NCEPDEV/global/glopara/fix/fix_am"}
 TOPO_DIR=${TOPO_DIR:-"/lustre/NCEPDEV/global/glopara/fix/fix_orog"}
 SFC_CLIMO_INPUT_DIR=${SFC_CLIMO_INPUT_DIR:-"/lustre/NCEPDEV/global/glopara/fix/fix_sfc_climo"}
 FIXLAM_NCO_BASEDIR=${FIXLAM_NCO_BASEDIR:-"/lustre/NCEPDEV/global/glopara/fix"}
-

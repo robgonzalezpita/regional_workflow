@@ -290,24 +290,30 @@ FV3_GFS_v15_thompson_mynn:
     domains_stack_size: 3000000
   fv_core_nml:
     agrid_vel_rst: True
+    external_eta: False
     full_zs_filter: !!python/none
     k_split: 2
-    n_split: 7
+    n_split: 5
     n_sponge: 9
+    npz: 60
     nord_zs_filter: !!python/none
     rf_fast: False
+    sg_cutoff: 10000.0
     stretch_fac: 0.999
   gfs_physics_nml:
     avg_max_length: 3600.0
     cdmbgwd: [0.88, 0.04]
     do_ugwp: False
     do_deep: False
+    do_mynnsfclay: True
     do_tofd: False
     effr_in: True
     fhlwr: 900.
     fhswr: 900.
     imfshalcnv: 2
     imfdeepcnv: 2
+    iaer: 5111
+    icliq_sw: 2
     iopt_alb: 2
     iopt_btr: 1
     iopt_crs: 1
@@ -320,6 +326,7 @@ FV3_GFS_v15_thompson_mynn:
     iopt_snf: 4
     iopt_stc: 1
     iopt_tbot: 2
+    iovr: 3
     ldiag_ugwp: False
     lgfdlmprad: False
     lsm: 1
@@ -327,9 +334,17 @@ FV3_GFS_v15_thompson_mynn:
     lsoil_lsm: !!python/none
     ltaerosol: False
     nstf_name: [0, 0, 0, 0, 0]
+    ttendlim: 0.07
     xkzm_h: 1.0
     xkzm_m: 1.0
     xkzminv: 0.3
+  nam_sfcperts:
+    iseed_lndp: !!python/none
+    lndp_lscale: !!python/none
+    lndp_prt_list: !!python/none
+    lndp_tau: !!python/none
+    lndp_type: !!python/none
+    lndp_var_list: !!python/none
 
 FV3_GFS_v16beta:
   atmos_model_nml:
@@ -498,6 +513,67 @@ FV3_CPT_v0:
     xkzm_s: 1.0
   surf_map_nml: !!python/none
 
+nssl_mp_no_nsst:
+  atmos_model_nml:
+    fdiag: 3
+    blocksize: 35
+    avg_max_length: 3600.
+    ccpp_suite: nssl_mp_no_nsst
+  cires_ugwp_nml: !!python/none
+  fms_nml:
+    domains_stack_size: 10000000
+  fv_core_nml:
+    external_eta: False
+    full_zs_filter: !!python/none
+    k_split: 2
+    n_sponge: 9
+    npz: 60
+    nwat: 7
+    sg_cutoff: 10000.0
+    rf_fast: False
+    agrid_vel_rst: True
+    stretch_fac: 0.999
+    write_restart_with_bcs: False
+    bc_update_interval: 3
+  gfs_physics_nml:
+    avg_max_length:  3600.0
+    bl_mynn_edmf: !!python/none
+    bl_mynn_edmf_mom: !!python/none
+    bl_mynn_tkeadvect:  !!python/none
+    cdmbgwd:  [0.88, 0.04]
+    do_deep:  False
+    do_mynnedmf:  False
+    do_tofd:  False
+    do_ugwp:  False
+    do_ysu:  False
+    fhlwr:  900.0
+    fhswr:  900.0
+    hybedmf:  True
+    iaer:  5111
+    icliq_sw:  2
+    imfdeepcnv:  2
+    imfshalcnv:  2
+    imp_physics:  18
+    iovr:  3
+    ldiag_ugwp:  False
+    lheatstrg:  !!python/none
+    lndp_type:  !!python/none
+    lsm:  !!python/none
+    lsoil_lsm:  !!python/none
+    ltaerosol:  False
+    n_var_lndp:  !!python/none
+    nssl_invertccn: True
+    nstf_name:  [0, 0, 0, 0, 0]
+  namsfc:
+    ldebug: False
+  nam_sfcperts:
+    iseed_lndp: !!python/none
+    lndp_lscale: !!python/none
+    lndp_prt_list: !!python/none
+    lndp_tau: !!python/none
+    lndp_type: !!python/none
+    lndp_var_list: !!python/none
+
 rrfs_gfsv16:
   atmos_model_nml:
     avg_max_length: 3600.0
@@ -508,10 +584,12 @@ rrfs_gfsv16:
     agrid_vel_rst: True
     dnats: 1
     do_sat_adj: True
+    external_eta: False
     full_zs_filter: !!python/none
     k_split: 3
     n_split: 4
     n_sponge: 9
+    npz: 60
     rf_fast: False
     sg_cutoff: 10000.0
     stretch_fac: 0.999
@@ -607,3 +685,10 @@ rrfs_gfsv16:
     xkzm_h:  1.0
     xkzminv:  0.3
     xkzm_m:  1.0
+  nam_sfcperts:
+    iseed_lndp: !!python/none
+    lndp_lscale: !!python/none
+    lndp_prt_list: !!python/none
+    lndp_tau: !!python/none
+    lndp_type: !!python/none
+    lndp_var_list: !!python/none

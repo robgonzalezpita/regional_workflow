@@ -126,7 +126,8 @@ elif [ "$MACHINE" = "WCOSS_CRAY" ]; then
   module load rocoto/1.2.4
 else
   module purge
-  module load rocoto
+  module use /contrib/apps/modules
+  module load rocoto/1.3.3
 fi
 #
 #-----------------------------------------------------------------------
