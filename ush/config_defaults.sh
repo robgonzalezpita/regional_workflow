@@ -1288,6 +1288,7 @@ WTIME_MAKE_ICS="00:30:00"
 WTIME_MAKE_LBCS="00:30:00"
 WTIME_RUN_FCST="04:30:00"
 WTIME_RUN_POST="00:15:00"
+WTIME_UPLOAD="00:30:00"
 #
 # Maximum number of attempts.
 #
@@ -1353,6 +1354,7 @@ DO_ENSEMBLE="FALSE"
 NUM_ENS_MEMBERS="1"
 NDIGITS_ENSMEM_NAMES=${#NUM_ENS_MEMBERS}
 GEFS_MEMBER="01"
+ENS_IDX_START="1"
 #
 #-----------------------------------------------------------------------
 #
