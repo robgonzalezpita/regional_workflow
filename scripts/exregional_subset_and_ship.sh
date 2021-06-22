@@ -100,13 +100,13 @@ gridspecs="lambert:262.5:38.5:38.5 237.280:1799:3000 21.138:1059:3000"
 # Set the needed variables
 #----------------------------------------------------------------------
 bucket=noaa-rrfs-pds
-s3_post_grib_pfx="s3://${bucket}/rrfs.${yyyymmdd}/${hh}/mem0${MEMBER}"
+s3_post_grib_pfx="s3://${bucket}/rrfs.${yyyymmdd}/${hh}/mem${MEMBER}"
 
-fhr3=$(printf "%03d" $fhr)
-fhr2=$(printf "%02d" $fhr)
+fhr3=$(printf "%03d" $((10#$fhr)))
+fhr2=$(printf "%02d" $((10#$fhr)))
 
 s3_file=rrfs.t${hh}z.mem${MEMBER}.na${fhr3}
-s3_reduce_file=rrfs.t${hh}z.mem${MEMBER}1.testbed.conusf${fhr3}.grib2
+s3_reduce_file=rrfs.t${hh}z.mem${MEMBER}.testbed.conusf${fhr3}.grib2
 
 post_file=PRSLEV.GrbF${fhr2}
 post_path=${input_dir}/${post_file}
@@ -127,7 +127,7 @@ fields_file=/contrib/rpanda/parm/testbed.txt
 #----------------------------------------------------------------------
 source /contrib/.aws/bdp.key
 
-post_stat=$(echo aws s3 cp ${post_path} ${s3_post_grib_pfx}/${s3_file})
+post_stat=$(aws s3 cp ${post_path} ${s3_post_grib_pfx}/${s3_file})
 
 # Check the contents of the grib file
 #----------------------------------------------------------------------
@@ -152,7 +152,7 @@ wgrib2 ${post_tmp_file} | \
   grep -F -f ${fields_file} | \
   wgrib2 -i -grib ${s3_reduce_file} ${post_tmp_file}
 
-post_reduce_stat=$(echo aws s3 cp ${s3_reduce_file} ${s3_post_grib_pfx}/${s3_reduce_file})
+post_reduce_stat=$(aws s3 cp ${s3_reduce_file} ${s3_post_grib_pfx}/${s3_reduce_file})
 wait
 
 # Report on upload status
