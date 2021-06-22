@@ -295,7 +295,8 @@ rrfs_thompson_mynn:
     k_split: 2
     n_split: 5
     n_sponge: 9
-    npz: 60
+    npz: 65
+    npz_type: input
     nord_zs_filter: !!python/none
     rf_fast: False
     sg_cutoff: 10000.0
@@ -312,7 +313,8 @@ rrfs_thompson_mynn:
     fhswr: 900.
     imfshalcnv: 2
     imfdeepcnv: 2
-    iaer: 5111
+    iaer: 1011
+    iccn: 2
     icliq_sw: 2
     iopt_alb: 2
     iopt_btr: 1
@@ -527,7 +529,8 @@ nssl_mp_no_nsst:
     full_zs_filter: !!python/none
     k_split: 2
     n_sponge: 9
-    npz: 60
+    npz: 65
+    npz_type: input
     nwat: 7
     sg_cutoff: 10000.0
     rf_fast: False
@@ -549,7 +552,8 @@ nssl_mp_no_nsst:
     fhlwr:  900.0
     fhswr:  900.0
     hybedmf:  True
-    iaer:  5111
+    iaer:  1011
+    iccn: 2
     icliq_sw:  2
     imfdeepcnv:  2
     imfshalcnv:  2
@@ -589,7 +593,8 @@ rrfs_gfsv16:
     k_split: 3
     n_split: 4
     n_sponge: 9
-    npz: 60
+    npz: 65
+    npz_type: input
     rf_fast: False
     sg_cutoff: 10000.0
     stretch_fac: 0.999
@@ -655,7 +660,8 @@ rrfs_gfsv16:
     effr_in:  True
     fhlwr:  900.0
     fhswr:  900.0
-    iaer:  5111
+    iaer:  1011
+    iccn: 2
     icliq_sw:  2
     imfdeepcnv:  2
     imfshalcnv:  2

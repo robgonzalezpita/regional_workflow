@@ -32,7 +32,7 @@ write_groups:            {{ write_groups }}
 write_tasks_per_group:   {{ write_tasks_per_group }}
 num_files:               2
 filename_base:           'dyn''phy'
-output_file:             'netcdf'
+output_file:             'netcdf_parallel' 'netcdf_parallel'
 write_nemsioflip:        .false.
 write_fsyncflag:         .false.
 #

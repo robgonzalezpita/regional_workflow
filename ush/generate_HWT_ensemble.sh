@@ -5,7 +5,7 @@ rm -rf config.sh
 
 # Generate 9 individual member experiment directories following the same numbering as in HWT.
 mem=1
-for suite in FV3_GFS_v15_thompson_mynn rrfs_gfsv16 nssl_mp_no_nsst ; do 
+for suite in rrfs_thompson_mynn rrfs_gfsv16 nssl_mp_no_nsst ; do 
    for ICS in gfs gefs01 gefs02; do 
     config_file=config.sh.$ICS
     member=$(printf "%02d" $mem)
