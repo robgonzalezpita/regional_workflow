@@ -153,30 +153,35 @@ esac
 #
 rm_vrfy -f fort.*
 cp_vrfy ${EMC_POST_DIR}/parm/nam_micro_lookup.dat ./eta_micro_lookup.dat
+ln_vrfy -snf ${FIX_CRTM}/*bin ./
 if [ ${USE_CUSTOM_POST_CONFIG_FILE} = "TRUE" ]; then
   post_config_fp="${CUSTOM_POST_CONFIG_FP}"
+  post_params_fp="${CUSTOM_POST_PARAMS_FP}"
   print_info_msg "
 ====================================================================
 Copying the user-defined post flat file specified by CUSTOM_POST_CONFIG_FP
 to the post forecast hour directory (fhr_dir):
   CUSTOM_POST_CONFIG_FP = \"${CUSTOM_POST_CONFIG_FP}\"
+  CUSTOM_POST_PARAMS_FP = \"${CUSTOM_POST_PARAMS_FP}\"
   fhr_dir = \"${fhr_dir}\"
 ===================================================================="
 else
   post_config_fp="${EMC_POST_DIR}/parm/postxconfig-NT-fv3lam.txt"
+  post_params_fp="${EMC_POST_DIR}/parm/params_grib2_tbl_new"
   print_info_msg "
 ====================================================================
 Copying the default post flat file specified by post_config_fp to the post
 forecast hour directory (fhr_dir):
   post_config_fp = \"${post_config_fp}\"
+  post_params_fp = \"${post_params_fp}\"
   fhr_dir = \"${fhr_dir}\"
 ===================================================================="
 fi
 cp_vrfy ${post_config_fp} ./postxconfig-NT.txt
-cp_vrfy ${EMC_POST_DIR}/parm/params_grib2_tbl_new ./params_grib2_tbl_new
+cp_vrfy ${post_params_fp} ./params_grib2_tbl_new
 cp_vrfy ${EXECDIR}/ncep_post .
-cp_vrfy ${FFG_DIR}/latest.FFG .
-if [ ${NET} = "RRFS_CONUS" ]; then
+if [ -f ${FFG_DIR}/latest.FFG ] && [ ${NET} = "RRFS_CONUS" ]; then
+  cp_vrfy ${FFG_DIR}/latest.FFG .
   grid_specs_rrfs="lambert:-97.5:38.500000 237.826355:1746:3000 21.885885:1014:3000"
   wgrib2 latest.FFG -match "0-12 hour" -end -new_grid_interpolation bilinear -new_grid_winds grid -new_grid ${grid_specs_rrfs} ffg_12h.grib2
   wgrib2 latest.FFG -match "0-6 hour" -end -new_grid_interpolation bilinear -new_grid_winds grid -new_grid ${grid_specs_rrfs} ffg_06h.grib2
@@ -227,7 +232,7 @@ ${dyn_file}
 netcdf
 grib2
 ${post_yyyy}-${post_mm}-${post_dd}_${post_hh}:00:00
-FV3R
+${POST_FULL_MODEL_NAME}
 ${phy_file}
 
  &NAMPGB
@@ -281,13 +286,22 @@ fi
 bgdawp=${postprd_dir}/${NET}.t${cyc}z.bgdawpf${fhr}.${tmmark}.grib2
 bgrd3d=${postprd_dir}/${NET}.t${cyc}z.bgrd3df${fhr}.${tmmark}.grib2
 bgsfc=${postprd_dir}/${NET}.t${cyc}z.bgsfcf${fhr}.${tmmark}.grib2
-mv_vrfy BGDAWP.GrbF${post_fhr} ${bgdawp}
-mv_vrfy BGRD3D.GrbF${post_fhr} ${bgrd3d}
+bgspc=${postprd_dir}/${NET}.t${cyc}z.bgspcf${fhr}.${tmmark}.grib2
+# Append entire wrftwo to wrfprs
+cat WRFPRS.GrbF${post_fhr} WRFTWO.GrbF${post_fhr} > WRFPRS.GrbF${post_fhr}_tmp
+mv WRFPRS.GrbF${post_fhr}_tmp WRFPRS.GrbF${post_fhr}
+mv_vrfy WRFPRS.GrbF${post_fhr} ${bgdawp}
+mv_vrfy WRFNAT.GrbF${post_fhr} ${bgrd3d}
+mv_vrfy WRFTWO.GrbF${post_fhr} ${bgsfc}
 # small subset of surface fields for testbed and internal use
 #wgrib2 -match "APCP|parmcat=16 parm=196|PRATE" ${bgrd3d} -grib ${bgsfc}
-
-# extract the output fields for the testbed
-wgrib2 ${bgdawp} | grep -F -f ${FIXam}/testbed_fields_bgdawp.txt | wgrib2 -i -grib ${bgsfc} ${bgdawp}
+matchstr="parmcat=16 parm=196|(TMP|DPT):2 m above ground\
+|CAPE:(90|255)-0 mb above ground|CAPE:surface\
+|CIN:(90|255)-0 mb above ground|CIN:surface\
+|parmcat=7 parm=207|parmcat=7 parm=208\
+|parmcat=2 parm=234|parmcat=2 parm=235\
+"
+wgrib2 -match "${matchstr}" ${bgsfc} -grib "${bgspc}"
 
 #Link output for transfer to Jet
 # Should the following be done only if on jet??
@@ -321,7 +335,7 @@ if [ ${#ADDNL_OUTPUT_GRIDS[@]} -gt 0 ]; then
 
   for grid in ${ADDNL_OUTPUT_GRIDS[@]}
   do
-    for leveltype in dawp rd3d sfc 
+    for leveltype in dawp rd3d sfc spc
     do
       
       eval grid_specs=\$grid_specs_${grid}
