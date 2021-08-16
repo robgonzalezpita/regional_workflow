@@ -22,7 +22,6 @@
 #  Set variables
 #-----------------------------------------------------------------------
 
-#branches=( develop release-v1 )    
 branches=( rrfs_ci ) 
 
 export machine=$1
@@ -36,11 +35,11 @@ account=`echo "${account}"`
 # Choose experiment. ( Full list in  ./baselines_list.txt)  
 #-----------------------------------------------------------------------
 
-#expts=( grid_RRFS_CONUS_25km_ics_HRRR_lbcs_RAP_suite_RRFS_v1alpha )
+expts=( grid_RRFS_CONUS_25km_ics_HRRR_lbcs_RAP_suite_RRFS_v1alpha )
 #expts=( grid_RRFS_CONUS_25km_ics_FV3GFS_lbcs_FV3GFS_suite_GFS_v15p2 )
 #expts=( grid_RRFS_CONUS_13km_ics_FV3GFS_lbcs_FV3GFS_suite_GFS_v15p2 )
 #expts=( grid_RRFS_CONUS_13km_ics_HRRR_lbcs_RAP_suite_HRRR )
-expts=( inline_post )
+#expts=( inline_post )
 #expts=( grid_RRFS_CONUS_13km_ics_FV3GFS_lbcs_FV3GFS_suite_GFS_v15p2 grid_RRFS_CONUS_25km_ics_HRRR_lbcs_RAP_suite_RRFS_v1alpha )
 
 #-----------------------------------------------------------------------
