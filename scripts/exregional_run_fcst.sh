@@ -490,7 +490,6 @@ fi
 #
 create_model_configure_file \
   cdate="$cdate" \
-  nthreads=${OMP_NUM_THREADS} \
   run_dir="${run_dir}" \
   sub_hourly_post="${SUB_HOURLY_POST}" \
   dt_subhourly_post_mnts="${DT_SUBHOURLY_POST_MNTS}" \
@@ -515,22 +514,6 @@ Call to function to create a diag table file for the current cycle's
 #
 #-----------------------------------------------------------------------
 #
-# If running ensemble forecasts, create a link to the cycle-specific
-# diagnostic tables file in the cycle directory.  Note that this link
-# should not be made if not running ensemble forecasts because in that
-# case, the cycle directory is the run directory (and we would be creating
-# a symlink with the name of a file that already exists).
-#
-#-----------------------------------------------------------------------
-#
-if [ "${DO_ENSEMBLE}" = "TRUE" ]; then
-  create_symlink_to_file target="${cycle_dir}/${DIAG_TABLE_FN}" \
-                         symlink="${run_dir}/${DIAG_TABLE_FN}" \
-                         relative="${relative_link_flag}"
-fi
-#
-#-----------------------------------------------------------------------
-#
 # Run the FV3-LAM model.  Note that we have to launch the forecast from
 # the current cycle's directory because the FV3 executable will look for
 # input files in the current directory.  Since those files have been
@@ -539,13 +522,6 @@ fi
 #
 #-----------------------------------------------------------------------
 #
-#-----------------------------------------------------------------------
-# Deactivate the conda environment to avoid conflicts between the 
-# environment used by the regional workflow (prepended to your $PATH)
-# and that used in the run environment.
-#-----------------------------------------------------------------------
-unload_python
-
 $APRUN ${FV3_EXEC_FP} || print_err_msg_exit "\
 Call to executable to run FV3-LAM forecast returned with nonzero exit
 code."
