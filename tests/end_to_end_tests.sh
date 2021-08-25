@@ -55,8 +55,8 @@ SRW_APP_DIR=$( dirname "${REGIONAL_WORKFLOW_DIR}" )
 TOP_DIR=$( dirname "${SRW_APP_DIR}" )
 TESTS_DIR=${REGIONAL_WORKFLOW_DIR}/tests
 
-BRANCH_DIR_NAME=ufs-srweather-app-${branches}
-APP_DIR=${TOP_DIR}/${BRANCH_DIR_NAME}
+#BRANCH_DIR_NAME=ufs-srweather-app-${branches}
+APP_DIR=${TOP_DIR}/ufs-srweather-app
 EXPTS_DIR=${TOP_DIR}/expt_dirs
 
 #----------------------------------------------------------------------
