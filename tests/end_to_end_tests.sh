@@ -35,8 +35,8 @@ account=`echo "${account}"`
 # Choose experiment. ( Full list in  ./baselines_list.txt)  
 #-----------------------------------------------------------------------
 
-expts=( grid_RRFS_CONUS_25km_ics_HRRR_lbcs_RAP_suite_RRFS_v1alpha )
-#expts=( grid_RRFS_CONUS_25km_ics_FV3GFS_lbcs_FV3GFS_suite_GFS_v15p2 )
+#expts=( grid_RRFS_CONUS_25km_ics_HRRR_lbcs_RAP_suite_RRFS_v1alpha )
+expts=( grid_RRFS_CONUS_25km_ics_FV3GFS_lbcs_FV3GFS_suite_GFS_v15p2 )
 #expts=( grid_RRFS_CONUS_13km_ics_FV3GFS_lbcs_FV3GFS_suite_GFS_v15p2 )
 #expts=( grid_RRFS_CONUS_13km_ics_HRRR_lbcs_RAP_suite_HRRR )
 #expts=( inline_post )
@@ -75,7 +75,6 @@ cmd="${APP_DIR}/env/wflow_${machine}.env"
 
 echo "-- Python command =>"  $cmd
 
-
 # If experiments list file exists, remove it, and add the experiemnts to a new expts list file
 if [ -f "auto_expts_list.txt" ] ; then
   rm "auto_expts_list.txt"
@@ -85,5 +84,4 @@ echo ${expts} > auto_expts_list.txt
 # Run the E2E Workflow tests
 #./run_experiments.sh expts_file=auto_expts_list.txt machine=${machine} account=${account} use_cron_to_relaunch=FALSE
 ./run_experiments.sh expts_file=auto_expts_list.txt machine=${machine} account=${account}
-
 
