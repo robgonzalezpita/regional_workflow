@@ -3,44 +3,55 @@
 #----------------------------------------------------------------------
 #  Automation of UFS Short Range Weather App Worfklow End to End Tests.
 #
-#  The script is dependant on a successful build of this repo. 
+#  The script is dependant on a successful build of this repo using the
+#  test/build.sh script in the ufs-srweather-app repository.
 #  The UFS build must be completed in a particular manner for this 
 #  script to function properly, notably the location of the build and
 #  bin directories: 
-#    BUILD_DIR=${APP_DIR}/build_${compiler}  
-#    BIN_DIR=${APP_DIR}/bin_${compiler}  
-#  
+#    BUILD_DIR=${APP_DIR}/build_${compiler}
+#    BIN_DIR=${APP_DIR}/bin_${compiler}
+#
 #  With the creating of a test_log directory and output files describing
 #  the result of each workflow status, a testing framework is established.
 #  The user must verify the contents of each experiment file in test_log/ 
-#  to check workflow success or failure.   
+#  to check workflow success or failure.
 #
-#  Example: . end_to_end_tests.sh hera zrtrr
+#  Example: ./end_to_end_tests.sh hera zrtrr
 #----------------------------------------------------------------------
 
 #-----------------------------------------------------------------------
 #  Set variables
 #-----------------------------------------------------------------------
 
-branches=( rrfs_ci ) 
+branches=( rrfs_ci )
+
+function usage {
+  echo
+  echo "Usage: $0 machine slurm_account  | -h"
+  echo
+  echo "       machine       [required] is one of: ${machines[@]}"
+  echo "       slurm_account [required] case sensitive name of the user-specific slurm account"
+  echo "       -h            display this help"
+  echo
+  exit 1
+
+}
+
+machines=( hera )
+
+if [ "$1" = "-h" ] ; then usage ; fi
+[[ $# -le 1 ]] && usage
 
 export machine=$1
-machine=`echo "${machine}" | tr '[A-Z]' '[a-z]'`  # scripts in sorc need lower case machine name
+machine=$(echo "${machine}" | tr '[A-Z]' '[a-z]')  # scripts in sorc need lower case machine name
 
 export account=$2
-account=`echo "${account}"`
-
 
 #-----------------------------------------------------------------------
-# Choose experiment. ( Full list in  ./baselines_list.txt)  
+# Choose experiment.
 #-----------------------------------------------------------------------
 
 expts=( grid_RRFS_CONUS_25km_ics_HRRR_lbcs_RAP_suite_RRFS_v1alpha )
-#expts=( grid_RRFS_CONUS_25km_ics_FV3GFS_lbcs_FV3GFS_suite_GFS_v15p2 )
-#expts=( grid_RRFS_CONUS_13km_ics_FV3GFS_lbcs_FV3GFS_suite_GFS_v15p2 )
-#expts=( grid_RRFS_CONUS_13km_ics_HRRR_lbcs_RAP_suite_HRRR )
-#expts=( inline_post )
-#expts=( grid_RRFS_CONUS_13km_ics_FV3GFS_lbcs_FV3GFS_suite_GFS_v15p2 grid_RRFS_CONUS_25km_ics_HRRR_lbcs_RAP_suite_RRFS_v1alpha )
 
 #-----------------------------------------------------------------------
 # Set directories
@@ -50,10 +61,11 @@ scrfunc_fp=$( readlink -f "${BASH_SOURCE[0]}" )
 scrfunc_fn=$( basename "${scrfunc_fp}" )
 scrfunc_dir=$( dirname "${scrfunc_fp}" )
 
-REGIONAL_WORKFLOW_DIR=$( dirname "${scrfunc_dir}" )
+WE2E_DIR=$( dirname "${scrfunc_dir}" )
+TESTS_DIR=$( dirname "${WE2E_DIR}" )
+REGIONAL_WORKFLOW_DIR=$( dirname "${TESTS_DIR}" )
 SRW_APP_DIR=$( dirname "${REGIONAL_WORKFLOW_DIR}" )
 TOP_DIR=$( dirname "${SRW_APP_DIR}" )
-TESTS_DIR=${REGIONAL_WORKFLOW_DIR}/tests
 
 BRANCH_DIR_NAME=ufs-srweather-app-${branches}
 APP_DIR=${TOP_DIR}/${BRANCH_DIR_NAME}
@@ -70,20 +82,18 @@ sed -i 's|EXECDIR="${SR_WX_APP_TOP_DIR}/bin"|EXECDIR="${SR_WX_APP_TOP_DIR}/bin_i
 #-----------------------------------------------------------------------
 
 # Load Python Modules
-source ${APP_DIR}/env/wflow_${machine}.env
 cmd="${APP_DIR}/env/wflow_${machine}.env"
+source ${cmd}
 
-echo "-- Python command =>"  $cmd
-
+echo "-- Load environment =>"  $cmd
 
 # If experiments list file exists, remove it, and add the experiemnts to a new expts list file
-if [ -f "auto_expts_list.txt" ] ; then
-  rm "auto_expts_list.txt"
-fi
-echo ${expts} > auto_expts_list.txt
+auto_file="auto_expts_list.txt"
+
+rm -rf ${auto_file}
+echo ${expts} > ${auto_file}
 
 # Run the E2E Workflow tests
-#./run_experiments.sh expts_file=auto_expts_list.txt machine=${machine} account=${account} use_cron_to_relaunch=FALSE
-./run_experiments.sh expts_file=auto_expts_list.txt machine=${machine} account=${account}
+./run_WE2E_tests.sh tests_file=${auto_file} machine=${machine} account=${account}
 
 
