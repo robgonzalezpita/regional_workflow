@@ -1,7 +1,10 @@
 #!/bin/sh
 
+. ${GLOBAL_VAR_DEFNS_FP}
+
 # This script pulls MRMS data from the NOAA HPSS
 # Top-level MRMS directory
+set -x
 mrms_dir=${OBS_DIR}/..
 if [[ ! -d "$mrms_dir" ]]; then
   mkdir -p $mrms_dir
@@ -63,8 +66,10 @@ while [[ ${cur_ut} -le ${end_valid_ut} ]]; do
 
   # Set field of interest from the MRMS products, including name and level information. 
   if [ "${field}" = "REFC" ]; then
-    field_base_name="MergedReflectivityQComposite"
-    level="_00.00_"
+    #field_base_name="MergedReflectivityQComposite"
+    #level="_00.00_"
+    field_base_name="MergedReflectivityQCComposite"
+    level="_00.50_"
   elif [ "${field}" = "RETOP" ]; then
     field_base_name="EchoTop"
     level="_18_00.50_"
@@ -110,6 +115,7 @@ while [[ ${cur_ut} -le ${end_valid_ut} ]]; do
     if [[ ${Status} != 0 ]]; then
       echo "WARNING: Bad return status (${Status}) for date \"${CurDate}\".  Did you forget to run \"module load hpss\"?"
       echo "WARNING: ${TarCommand}"
+      exit ${Status}
     else
       if [[ ! -d "$mrms_proc/${vyyyymmdd}" ]]; then
         mkdir -p $mrms_proc/${vyyyymmdd}
@@ -118,7 +124,7 @@ while [[ ${cur_ut} -le ${end_valid_ut} ]]; do
       hour=0
       while [[ ${hour} -le 23 ]]; do
         echo "hour=${hour}"
-        python ${SCRIPTSDIR}/mrms_pull_topofhour.py ${vyyyy}${vmm}${vdd}${hour} ${mrms_proc} ${mrms_raw} ${field_base_name} ${level}
+        python ${USHDIR}/mrms_pull_topofhour.py ${vyyyy}${vmm}${vdd}${hour} ${mrms_proc} ${mrms_raw} ${field_base_name} ${level}
       hour=$((${hour} + 1)) # hourly increment
       done
     fi
