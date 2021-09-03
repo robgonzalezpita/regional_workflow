@@ -51,7 +51,7 @@ export account=$2
 # Choose experiment.
 #-----------------------------------------------------------------------
 
-expts=( grid_RRFS_CONUS_25km_ics_HRRR_lbcs_RAP_suite_RRFS_v1alpha )
+expts=( grid_RRFS_CONUS_25km_ics_FV3GFS_lbcs_FV3GFS_suite_GSD_SAR )
 
 #-----------------------------------------------------------------------
 # Set directories
@@ -67,8 +67,8 @@ REGIONAL_WORKFLOW_DIR=$( dirname "${TESTS_DIR}" )
 SRW_APP_DIR=$( dirname "${REGIONAL_WORKFLOW_DIR}" )
 TOP_DIR=$( dirname "${SRW_APP_DIR}" )
 
-BRANCH_DIR_NAME=ufs-srweather-app-${branches}
-APP_DIR=${TOP_DIR}/${BRANCH_DIR_NAME}
+#BRANCH_DIR_NAME=ufs-srweather-app-${branches}
+APP_DIR=${TOP_DIR}/ufs-srweather-app
 EXPTS_DIR=${TOP_DIR}/expt_dirs
 
 #----------------------------------------------------------------------
@@ -95,5 +95,4 @@ echo ${expts} > ${auto_file}
 
 # Run the E2E Workflow tests
 ./run_WE2E_tests.sh tests_file=${auto_file} machine=${machine} account=${account}
-
 
