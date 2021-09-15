@@ -372,6 +372,20 @@ status):
   expt_name = \"${expt_name}\"
   wflow_status = \"${wflow_status}\"
 "
+
+# 
+# Additions for RRFS_CI E2E Tests:
+#
+RRFS_DIR=$(dirname "${scrfunc_dir}")
+TESTS_DIR=${RRFS_DIR}/tests
+TESTS_LOG_DIR=${TESTS_DIR}/test_log
+
+if [ ! -d "${TESTS_LOG_DIR}" ] ; then
+  mkdir -p ${TESTS_LOG_DIR} 
+fi
+
+echo ${expt_name} : ${wflow_status}  >> ${TESTS_LOG_DIR}/${expt_name}
+
 #
 # If a cron job was being used to periodically relaunch the workflow, we
 # now remove the entry in the crontab corresponding to the workflow be-
