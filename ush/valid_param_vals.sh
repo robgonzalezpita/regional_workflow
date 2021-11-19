@@ -3,9 +3,10 @@
 #
 valid_vals_RUN_ENVIR=("nco" "community")
 valid_vals_VERBOSE=("TRUE" "true" "YES" "yes" "FALSE" "false" "NO" "no")
-valid_vals_MACHINE=("WCOSS_CRAY" "WCOSS_DELL_P3" "HERA" "ORION" "JET" "ODIN" "CHEYENNE" "STAMPEDE")
+valid_vals_MACHINE=("WCOSS_CRAY" "WCOSS_DELL_P3" "HERA" "ORION" "JET" "ODIN" "CHEYENNE" "STAMPEDE" "LINUX" "MACOS")
 valid_vals_SCHED=("slurm" "pbspro" "lsf" "lsfcray" "none")
 valid_vals_FCST_MODEL=("ufs-weather-model" "fv3gfs_aqm")
+valid_vals_WORKFLOW_MANAGER=("rocoto" "none")
 valid_vals_PREDEF_GRID_NAME=( \
 "RRFS_CONUS_25km" \
 "RRFS_CONUS_13km" \
@@ -52,9 +53,11 @@ valid_vals_RUN_TASK_MAKE_GRID=("TRUE" "true" "YES" "yes" "FALSE" "false" "NO" "n
 valid_vals_RUN_TASK_MAKE_OROG=("TRUE" "true" "YES" "yes" "FALSE" "false" "NO" "no")
 valid_vals_RUN_TASK_MAKE_SFC_CLIMO=("TRUE" "true" "YES" "yes" "FALSE" "false" "NO" "no")
 valid_vals_RUN_TASK_RUN_POST=("TRUE" "true" "YES" "yes" "FALSE" "false" "NO" "no")
+valid_vals_WRITE_DOPOST=("TRUE" "true" "YES" "yes" "FALSE" "false" "NO" "no")
 valid_vals_RUN_TASK_VX_GRIDSTAT=("TRUE" "true" "YES" "yes" "FALSE" "false" "NO" "no")
 valid_vals_RUN_TASK_VX_POINTSTAT=("TRUE" "true" "YES" "yes" "FALSE" "false" "NO" "no")
-valid_vals_WRITE_DOPOST=("TRUE" "true" "YES" "yes" "FALSE" "false" "NO" "no")
+valid_vals_RUN_TASK_VX_ENSGRID=("TRUE" "true" "YES" "yes" "FALSE" "false" "NO" "no")
+valid_vals_RUN_TASK_VX_ENSPOINT=("TRUE" "true" "YES" "yes" "FALSE" "false" "NO" "no")
 valid_vals_QUILTING=("TRUE" "true" "YES" "yes" "FALSE" "false" "NO" "no")
 valid_vals_PRINT_ESMF=("TRUE" "true" "YES" "yes" "FALSE" "false" "NO" "no")
 valid_vals_USE_CRON_TO_RELAUNCH=("TRUE" "true" "YES" "yes" "FALSE" "false" "NO" "no")
@@ -69,6 +72,7 @@ valid_vals_DO_SPP=("TRUE" "true" "YES" "yes" "FALSE" "false" "NO" "no")
 valid_vals_DO_SKEB=("TRUE" "true" "YES" "yes" "FALSE" "false" "NO" "no")
 valid_vals_USE_ZMTNBLCK=("TRUE" "true" "YES" "yes" "FALSE" "false" "NO" "no")
 valid_vals_USE_FVCOM=("TRUE" "true" "YES" "yes" "FALSE" "false" "NO" "no")
+valid_vals_FVCOM_WCSTART=("warm" "WARM" "cold" "COLD")
 valid_vals_COMPILER=("intel" "gnu")
 valid_vals_SUB_HOURLY_POST=("TRUE" "true" "YES" "yes" "FALSE" "false" "NO" "no")
 valid_vals_DT_SUBHOURLY_POST_MNTS=("1" "01" "2" "02" "3" "03" "4" "04" "5" "05" "6" "06" "10" "12" "15" "20" "30")

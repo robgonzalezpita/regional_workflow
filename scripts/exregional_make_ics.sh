@@ -27,7 +27,7 @@
 #
 #-----------------------------------------------------------------------
 #
-scrfunc_fp=$( readlink -f "${BASH_SOURCE[0]}" )
+scrfunc_fp=$( $READLINK -f "${BASH_SOURCE[0]}" )
 scrfunc_fn=$( basename "${scrfunc_fp}" )
 scrfunc_dir=$( dirname "${scrfunc_fp}" )
 #
@@ -105,6 +105,7 @@ case "$MACHINE" in
 
   "ORION")
     ulimit -s unlimited
+    ulimit -a
     APRUN="srun"
     ;;
 
@@ -124,6 +125,21 @@ case "$MACHINE" in
 
   "STAMPEDE")
     APRUN="ibrun"
+    ;;
+
+  "MACOS")
+    APRUN=$RUN_CMD_UTILS
+    ;;
+
+  "LINUX")
+    ulimit -s unlimited
+    APRUN=$RUN_CMD_UTILS
+    ;;
+
+  *)
+    print_err_msg_exit "\
+Run command has not been specified for this machine:
+  MACHINE = \"$MACHINE\""
     ;;
 
 esac
@@ -644,8 +660,10 @@ mv_vrfy gfs.bndy.nc ${ics_dir}/gfs_bndy.tile${TILE_RGNL}.000.nc
 #
 if [ "${USE_FVCOM}" = "TRUE" ]; then
 
+#Format for fvcom_time: YYYY-MM-DDTHH:00:00.000000
   fvcom_exec_fn="fvcom_to_FV3"
   fvcom_exec_fp="$EXECDIR/${fvcom_exec_fn}"
+  fvcom_time="${DATE_FIRST_CYCL:0:4}-${DATE_FIRST_CYCL:4:2}-${DATE_FIRST_CYCL:6:2}T${CYCL_HRS[0]}:00:00.000000"
   if [ ! -f "${fvcom_exec_fp}" ]; then
     print_err_msg_exit "\
 The executable (fvcom_exec_fp) for processing FVCOM data onto FV3-LAM
@@ -666,13 +684,15 @@ Please check the following user defined variables:
 
   cp_vrfy ${fvcom_data_fp} ${ics_dir}/fvcom.nc
   cd_vrfy ${ics_dir}
-  ${APRUN} ${fvcom_exec_fn} sfc_data.tile${TILE_RGNL}.halo${NH0}.nc fvcom.nc || \
+  ${APRUN} ${fvcom_exec_fn} sfc_data.tile${TILE_RGNL}.halo${NH0}.nc fvcom.nc ${FVCOM_WCSTART} ${fvcom_time}|| \
   print_err_msg_exit "\
 Call to executable (fvcom_exe) to modify sfc fields for FV3-LAM failed:
   fvcom_exe = \"${fvcom_exe}\"
 The following variables were being used:
   FVCOM_DIR = \"${FVCOM_DIR}\"
   FVCOM_FILE = \"${FVCOM_FILE}\"
+  fvcom_time = \"${fvcom_time}\"
+  FVCOM_WCSTART = \"${FVCOM_WCSTART}\"
   ics_dir = \"${ics_dir}\"
   fvcom_exe_dir = \"${fvcom_exe_dir}\"
   fvcom_exe = \"${fvcom_exe}\""
