@@ -17,9 +17,18 @@ set -u
 #
 #-----------------------------------------------------------------------
 #
-scrfunc_fp=$( readlink -f "${BASH_SOURCE[0]}" )
+if [[ $(uname -s) == Darwin ]]; then
+  command -v greadlink >/dev/null 2>&1 || { echo >&2 "For Darwin-based operating systems (MacOS), the 'greadlink' utility is required to run the UFS SRW Application. Reference the User's Guide for more information about platform requirements. Aborting."; exit 1; }
+  scrfunc_fp=$( greadlink -f "${BASH_SOURCE[0]}" )
+else
+  scrfunc_fp=$( readlink -f "${BASH_SOURCE[0]}" )
+fi
 scrfunc_fn=$( basename "${scrfunc_fp}" )
 scrfunc_dir=$( dirname "${scrfunc_fp}" )
+
+ushdir="${scrfunc_dir}"
+. $ushdir/source_util_funcs.sh
+
 #
 #-----------------------------------------------------------------------
 #
@@ -65,7 +74,12 @@ scrfunc_dir=$( dirname "${scrfunc_fp}" )
 #-----------------------------------------------------------------------
 #
 exptdir=$( dirname "$0" )
-exptdir=$( readlink -f "$exptdir" )
+if [[ $(uname -s) == Darwin ]]; then
+  command -v greadlink >/dev/null 2>&1 || { echo >&2 "For Darwin-based operating systems (MacOS), the 'greadlink' utility is required to run the UFS SRW Application. Reference the User's Guide for more information about platform requirements. Aborting."; exit 1; }
+  exptdir=$( greadlink -f "$exptdir" )
+else
+  exptdir=$( readlink -f "$exptdir" )
+fi
 #
 #-----------------------------------------------------------------------
 #
@@ -74,6 +88,7 @@ exptdir=$( readlink -f "$exptdir" )
 #-----------------------------------------------------------------------
 #
 . $exptdir/var_defns.sh
+. ${USHDIR}/source_util_funcs.sh
 #
 #-----------------------------------------------------------------------
 #
@@ -91,26 +106,14 @@ expt_name="${EXPT_SUBDIR}"
 #
 #-----------------------------------------------------------------------
 #
-if [ "$MACHINE" = "CHEYENNE" ]; then
-  module use -a /glade/p/ral/jntp/UFS_SRW_app/modules/
-  module load rocoto
-elif [ "$MACHINE" = "ORION" ]; then
-  module purge
-  module load contrib rocoto
-elif [ "$MACHINE" = "WCOSS_DELL_P3" ]; then
-  module purge
-  module load lsf/10.1
-  module use /gpfs/dell3/usrx/local/dev/emc_rocoto/modulefiles/
-  module load ruby/2.5.1 rocoto/1.3.0rc2
-elif [ "$MACHINE" = "WCOSS_CRAY" ]; then
-  module purge
-  module load xt-lsfhpc/9.1.3
-  module use -a /usrx/local/emc_rocoto/modulefiles
-  module load rocoto/1.3.0rc2
-else
-  module purge
-  module load rocoto
-fi
+machine=$(echo_lowercase $MACHINE)
+env_fn=${WFLOW_ENV_FN:-"wflow_${machine}.env"}
+env_fp="${SR_WX_APP_TOP_DIR}/env/${env_fn}"
+module purge
+source "${env_fp}" || print_err_msg_exit "\
+  Sourcing platform-specific environment file (env_fp) for
+the workflow task failed :
+env_fp = \"${env_fp}\""
 #
 #-----------------------------------------------------------------------
 #
@@ -152,35 +155,7 @@ cd "$exptdir"
 #-----------------------------------------------------------------------
 #
 
-#rocotorun_output=$( ls -alF )
-#echo
-#echo "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
-#echo "${rocotorun_output}"
-#echo "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB"
-
-#rocotorun_output=$( \
-#rocotorun -w "${WFLOW_XML_FN}" -d "${rocoto_database_fn}" -v 10 \
-#)
-#rocotorun_output=$( (rocotorun -w "${WFLOW_XML_FN}" -d "${rocoto_database_fn}" -v 10) 2>&1 )  # This freezes the script.
-#rocotorun_output=$( (rocotorun -w "${WFLOW_XML_FN}" -d "${rocoto_database_fn}" -v 10) 1>&2 )  # This leaves rocotorun_output empty.
-#rocotorun_output=$( rocotorun -w "${WFLOW_XML_FN}" -d "${rocoto_database_fn}" -v 10 )
-#{ error=$(command 2>&1 1>&$out); } {out}>&1
-#{ rocotorun_output=$( rocotorun -w "${WFLOW_XML_FN}" -d "${rocoto_database_fn}" -v 10 2>&1 1>&$out); } {out}>&1  # This freezes the script.
-
-#
-# Ideally, the following two lines should work, but for some reason the
-# output of rocotorun cannot be captured in a variable using the $(...)
-# notation.  Maybe it's not being written to stdout, although I tried
-# redirecting stderr to stdout and other tricks but nothing seemed to
-# work.  For this reason, below we first redirect the output of rocoto-
-# run to a temporary file and then read in the contents of that file in-
-# to the rocotorun_output variable using the cat command.
-#
-#rocotorun_cmd="rocotorun -w \"${WFLOW_XML_FN}\" -d \"${rocoto_database_fn}\" -v 10"
-#rocotorun_output=$( eval ${rocotorun_cmd} 2>&1 )
-#
 tmp_fn="rocotorun_output.txt"
-#rocotorun_cmd="rocotorun -w \"${WFLOW_XML_FN}\" -d \"${rocoto_database_fn}\" -v 10 > ${tmp_fn}"
 rocotorun_cmd="rocotorun -w \"${WFLOW_XML_FN}\" -d \"${rocoto_database_fn}\" -v 10"
 eval ${rocotorun_cmd} > ${tmp_fn} 2>&1
 rocotorun_output=$( cat "${tmp_fn}" )
@@ -207,18 +182,9 @@ done <<< "${rocotorun_output}"
 #
 #-----------------------------------------------------------------------
 #
-#rocotostat_cmd="{ pwd; rocotostat -w \"${WFLOW_XML_FN}\" -d \"${rocoto_database_fn}\" -v 10; }"
-#rocotostat_cmd="{ pwd; ls -alF; rocotostat -w ${WFLOW_XML_FN} -d ${rocoto_database_fn} -v 10; }"
-#rocotostat_cmd="{ pwd; ls -alF; rocotostat -w \"${WFLOW_XML_FN}\" -d \"${rocoto_database_fn}\" -v 10; }"
-#rocotostat_cmd="{ pwd; rocotostat -w \"${WFLOW_XML_FN}\" -d \"${rocoto_database_fn}\" -v 10; }"
-#rocotostat_cmd="{ rocotostat -w \"${WFLOW_XML_FN}\" -d \"${rocoto_database_fn}\" -v 10; }"
 rocotostat_cmd="rocotostat -w \"${WFLOW_XML_FN}\" -d \"${rocoto_database_fn}\" -v 10"
 
-#rocotostat_output=$( pwd; rocotostat -w "${WFLOW_XML_FN}" -d "${rocoto_database_fn}" -v 10 2>&1 )
-#rocotostat_output=$( rocotostat -w "${WFLOW_XML_FN}" -d "${rocoto_database_fn}" -v 10 2>&1 )
 rocotostat_output=$( eval ${rocotostat_cmd} 2>&1 )
-#rocotostat_output=$( ${rocotostat_cmd} 2>&1 )
-#rocotostat_output=$( { pwd; ls -alF; } 2>&1 )
 error_msg="DEAD"
 while read -r line; do
   grep_output=$( printf "$line" | grep "${error_msg}" )
@@ -299,8 +265,8 @@ while read -r line; do
 #
   if [ $i -gt 0 ]; then
     im1=$((i-1))
-    cycle_str[im1]=$( echo "$line" | sed -r -n -e "s/${regex_search}/\1/p" )
-    cycle_status[im1]=$( echo "$line" | sed -r -n -e "s/${regex_search}/\2/p" )
+    cycle_str[im1]=$( echo "$line" | $SED -r -n -e "s/${regex_search}/\1/p" )
+    cycle_status[im1]=$( echo "$line" | $SED -r -n -e "s/${regex_search}/\2/p" )
   fi
   i=$((i+1))
 done <<< "${rocotostat_output}"
@@ -409,7 +375,7 @@ launch script for this experiment:
 # CRONTAB_LINE with backslashes.  Do this next.
 #
     crontab_line_esc_astr=$( printf "%s" "${CRONTAB_LINE}" | \
-                             sed -r -e "s%[*]%\\\\*%g" )
+                             $SED -r -e "s%[*]%\\\\*%g" )
 #
 # In the string passed to the grep command below, we use the line start
 # and line end anchors ("^" and "$", respectively) to ensure that we on-
