@@ -26,7 +26,7 @@ function set_gridparams_ESGgrid() {
 #
 #-----------------------------------------------------------------------
 #
-  local scrfunc_fp=$( readlink -f "${BASH_SOURCE[0]}" )
+  local scrfunc_fp=$( $READLINK -f "${BASH_SOURCE[0]}" )
   local scrfunc_fn=$( basename "${scrfunc_fp}" )
   local scrfunc_dir=$( dirname "${scrfunc_fp}" )
 #
@@ -55,10 +55,12 @@ function set_gridparams_ESGgrid() {
 "halo_width" \
 "delx" \
 "dely" \
+"pazi" \
 "output_varname_lon_ctr" \
 "output_varname_lat_ctr" \
 "output_varname_nx" \
 "output_varname_ny" \
+"output_varname_pazi" \
 "output_varname_halo_width" \
 "output_varname_stretch_factor" \
 "output_varname_del_angle_x_sg" \
@@ -80,8 +82,7 @@ function set_gridparams_ESGgrid() {
 #
 #-----------------------------------------------------------------------
 #
-# Source the file containing various mathematical, physical, etc cons-
-# tants.
+# Source the file containing various mathematical, physical, etc constants.
 #
 #-----------------------------------------------------------------------
 #
@@ -154,6 +155,7 @@ function set_gridparams_ESGgrid() {
   eval ${output_varname_ny}="${ny}"
   eval ${output_varname_halo_width}="${halo_width}"
   eval ${output_varname_stretch_factor}="${stretch_factor}"
+  eval ${output_varname_pazi}="${pazi}"
   eval ${output_varname_del_angle_x_sg}="${del_angle_x_sg}"
   eval ${output_varname_del_angle_y_sg}="${del_angle_y_sg}"
   eval ${output_varname_neg_nx_of_dom_with_wide_halo}="${neg_nx_of_dom_with_wide_halo}"

@@ -35,7 +35,7 @@
 #
 #-----------------------------------------------------------------------
 #
-scrfunc_fp=$( readlink -f "${BASH_SOURCE[0]}" )
+scrfunc_fp=$( $READLINK -f "${BASH_SOURCE[0]}" )
 scrfunc_fn=$( basename "${scrfunc_fp}" )
 scrfunc_dir=$( dirname "${scrfunc_fp}" )
 #
@@ -78,6 +78,16 @@ print_input_args valid_args
 #
 #-----------------------------------------------------------------------
 #
+# Set OpenMP variables.
+#
+#-----------------------------------------------------------------------
+#
+export KMP_AFFINITY=${KMP_AFFINITY_MAKE_SFC_CLIMO}
+export OMP_NUM_THREADS=${OMP_NUM_THREADS_MAKE_SFC_CLIMO}
+export OMP_STACKSIZE=${OMP_STACKSIZE_MAKE_SFC_CLIMO}
+#
+#-----------------------------------------------------------------------
+#
 # Are these machine dependent??
 #
 #-----------------------------------------------------------------------
@@ -112,7 +122,7 @@ input_vegetation_type_file="${SFC_CLIMO_INPUT_DIR}/vegetation_type.igbp.0.05.nc"
 input_vegetation_greenness_file="${SFC_CLIMO_INPUT_DIR}/vegetation_greenness.0.144.nc"
 mosaic_file_mdl="${FIXLAM}/${CRES}${DOT_OR_USCORE}mosaic.halo${NH4}.nc"
 orog_dir_mdl="${FIXLAM}"
-orog_files_mdl=${CRES}${DOT_OR_USCORE}oro_data.tile${TILE_RGNL}.halo${NH4}.nc
+orog_files_mdl="${CRES}${DOT_OR_USCORE}oro_data.tile${TILE_RGNL}.halo${NH4}.nc"
 halo=${NH4}
 maximum_snow_albedo_method="bilinear"
 snowfree_albedo_method="bilinear"
@@ -126,7 +136,7 @@ EOF
 #
 #-----------------------------------------------------------------------
 #
-case $MACHINE in
+case "$MACHINE" in
 
   "WCOSS_CRAY")
     APRUN=${APRUN:-"aprun -j 1 -n 6 -N 6"}
@@ -170,11 +180,18 @@ case $MACHINE in
     APRUN="ibrun -np ${nprocs}"
     ;;
 
+  "MACOS")
+    APRUN=$RUN_CMD_UTILS
+    ;;
+
+  "LINUX")
+    APRUN=$RUN_CMD_UTILS
+    ;;
+
   *)
     print_err_msg_exit "\
 Run command has not been specified for this machine:
-  MACHINE = \"$MACHINE\"
-  APRUN = \"$APRUN\""
+  MACHINE = \"$MACHINE\""
     ;;
 
 esac

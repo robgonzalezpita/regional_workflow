@@ -15,7 +15,7 @@ function create_model_configure_file() {
 #
 #-----------------------------------------------------------------------
 #
-  { save_shell_opts; set -u -x; } > /dev/null 2>&1
+  { save_shell_opts; set -u +x; } > /dev/null 2>&1
 #
 #-----------------------------------------------------------------------
 #
@@ -25,7 +25,7 @@ function create_model_configure_file() {
 #
 #-----------------------------------------------------------------------
 #
-  local scrfunc_fp=$( readlink -f "${BASH_SOURCE[0]}" )
+  local scrfunc_fp=$( $READLINK -f "${BASH_SOURCE[0]}" )
   local scrfunc_fn=$( basename "${scrfunc_fp}" )
   local scrfunc_dir=$( dirname "${scrfunc_fp}" )
 #
@@ -48,7 +48,9 @@ function create_model_configure_file() {
   local valid_args=(
 cdate \
 run_dir \
-nthreads \
+sub_hourly_post \
+dt_subhourly_post_mnts \
+dt_atmos \
   )
   process_args valid_args "$@"
 #
@@ -97,8 +99,10 @@ run directory (run_dir):
 #
 # Set parameters in the model configure file.
 #
-  dot_quilting_dot="."${QUILTING,,}"."
-  dot_print_esmf_dot="."${PRINT_ESMF,,}"."
+  dot_quilting_dot="."$(echo_lowercase $QUILTING)"."
+  dot_print_esmf_dot="."$(echo_lowercase $PRINT_ESMF)"."
+  dot_cpl_dot="."$(echo_lowercase $CPL)"."
+  dot_write_dopost="."$(echo_lowercase $WRITE_DOPOST)"."
 #
 #-----------------------------------------------------------------------
 #
@@ -110,16 +114,18 @@ run directory (run_dir):
 #
   settings="\
   'PE_MEMBER01': ${PE_MEMBER01}
+  'print_esmf': ${dot_print_esmf_dot}
   'start_year': $yyyy
   'start_month': $mm
   'start_day': $dd
   'start_hour': $hh
   'nhours_fcst': ${FCST_LEN_HRS}
   'dt_atmos': ${DT_ATMOS}
-  'atmos_nthreads': ${nthreads:-1}
-  'ncores_per_node': ${NCORES_PER_NODE}
+  'cpl': ${dot_cpl_dot}
+  'atmos_nthreads': ${OMP_NUM_THREADS_RUN_FCST}
+  'restart_interval': ${RESTART_INTERVAL}
+  'write_dopost': ${dot_write_dopost}
   'quilting': ${dot_quilting_dot}
-  'print_esmf': ${dot_print_esmf_dot}
   'output_grid': ${WRTCMP_output_grid}"
 #  'output_grid': \'${WRTCMP_output_grid}\'"
 #
@@ -169,6 +175,45 @@ run directory (run_dir):
     fi
 
   fi
+#
+# If sub_hourly_post is set to "TRUE", then the forecast model must be 
+# directed to generate output files on a sub-hourly interval.  Do this 
+# by specifying the output interval in the model configuration file 
+# (MODEL_CONFIG_FN) in units of number of forecat model time steps (nsout).  
+# nsout is calculated using the user-specified output time interval 
+# dt_subhourly_post_mnts (in units of minutes) and the forecast model's 
+# main time step dt_atmos (in units of seconds).  Note that nsout is 
+# guaranteed to be an integer because the experiment generation scripts 
+# require that dt_subhourly_post_mnts (after conversion to seconds) be 
+# evenly divisible by dt_atmos.  Also, in this case, the variable output_fh 
+# [which specifies the output interval in hours; 
+# see the jinja model_config template file] is set to 0, although this 
+# doesn't matter because any positive of nsout will override output_fh.
+#
+# If sub_hourly_post is set to "FALSE", then the workflow is hard-coded 
+# (in the jinja model_config template file) to direct the forecast model 
+# to output files every hour.  This is done by setting (1) output_fh to 1 
+# here, and (2) nsout to -1 here which turns off output by time step interval.
+#
+# Note that the approach used here of separating how hourly and subhourly
+# output is handled should be changed/generalized/simplified such that 
+# the user should only need to specify the output time interval (there
+# should be no need to specify a flag like sub_hourly_post); the workflow 
+# should then be able to direct the model to output files with that time 
+# interval and to direct the post-processor to process those files 
+# regardless of whether that output time interval is larger than, equal 
+# to, or smaller than one hour.
+#
+  if [ "${sub_hourly_post}" = "TRUE" ]; then
+    nsout=$(( dt_subhourly_post_mnts*60 / dt_atmos ))
+    output_fh=0
+  else
+    output_fh=1
+    nsout=-1
+  fi
+  settings="${settings}
+  'output_fh': ${output_fh}
+  'nsout': ${nsout}"
 
   print_info_msg $VERBOSE "
 The variable \"settings\" specifying values to be used in the \"${MODEL_CONFIG_FN}\"

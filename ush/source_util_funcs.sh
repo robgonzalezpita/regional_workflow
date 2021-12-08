@@ -8,7 +8,11 @@ function source_util_funcs() {
 #
 #-----------------------------------------------------------------------
 #
-  local scrfunc_fp=$( readlink -f "${BASH_SOURCE[0]}" )
+  if [[ $(uname -s) == Darwin ]]; then
+    local scrfunc_fp=$( greadlink -f "${BASH_SOURCE[0]}" )
+  else
+    local scrfunc_fp=$( readlink -f "${BASH_SOURCE[0]}" )
+  fi
   local scrfunc_fn=$( basename "${scrfunc_fp}" )
   local scrfunc_dir=$( dirname "${scrfunc_fp}" )
 #
@@ -22,12 +26,20 @@ function source_util_funcs() {
 #
 #-----------------------------------------------------------------------
 #
-# Set the directory in which the files defining the various utility 
-# functions are located.
+# Set necessary directory variables.
 #
 #-----------------------------------------------------------------------
 #
-  local bashutils_dir="${scrfunc_dir}/bash_utils"
+  local ushdir="${scrfunc_dir}"
+  local bashutils_dir="${ushdir}/bash_utils"
+#
+#-----------------------------------------------------------------------
+#
+# Source the file containing workflow constants. 
+#
+#-----------------------------------------------------------------------
+#
+  . ${ushdir}/constants.sh
 #
 #-----------------------------------------------------------------------
 #
@@ -37,6 +49,15 @@ function source_util_funcs() {
 #-----------------------------------------------------------------------
 #
   . ${bashutils_dir}/save_restore_shell_opts.sh
+#
+#-----------------------------------------------------------------------
+#
+# Source the file that defines MacOS-specific UNIX command-line
+# utilities, that mimic the functionality of the GNU equivalents
+#
+#-----------------------------------------------------------------------
+#
+  . ${bashutils_dir}/define_macos_utilities.sh
 #
 #-----------------------------------------------------------------------
 #
@@ -71,6 +92,15 @@ function source_util_funcs() {
 #-----------------------------------------------------------------------
 #
   . ${bashutils_dir}/count_files.sh
+#
+#-----------------------------------------------------------------------
+#
+# Source the file containing the functions that will echo given strings
+# as uppercase or lowercase
+#
+#-----------------------------------------------------------------------
+#
+  . ${bashutils_dir}/change_case.sh
 #
 #-----------------------------------------------------------------------
 #
@@ -172,6 +202,15 @@ function source_util_funcs() {
 #-----------------------------------------------------------------------
 #
   . ${bashutils_dir}/get_charvar_from_netcdf.sh
+#
+#-----------------------------------------------------------------------
+#
+# Source the file containing the function that creates a symlink to a
+# file (including performing checks).
+#
+#-----------------------------------------------------------------------
+#
+  . ${bashutils_dir}/create_symlink_to_file.sh
 
 }
 source_util_funcs

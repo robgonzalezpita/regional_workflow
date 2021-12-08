@@ -35,7 +35,7 @@
 #
 #-----------------------------------------------------------------------
 #
-scrfunc_fp=$( readlink -f "${BASH_SOURCE[0]}" )
+scrfunc_fp=$( $READLINK -f "${BASH_SOURCE[0]}" )
 scrfunc_fn=$( basename "${scrfunc_fp}" )
 scrfunc_dir=$( dirname "${scrfunc_fp}" )
 #
@@ -76,13 +76,14 @@ print_input_args valid_args
 #
 #-----------------------------------------------------------------------
 #
-# The orography code runs with threads.  On Cray, the code is optimized
-# for six threads.  Do not change.
+# Set OpenMP variables.  The orog executable runs with OMP. On
+# WCOSS (Cray), it is optimized for six threads, which is the default.
 #
 #-----------------------------------------------------------------------
 #
-export OMP_NUM_THREADS=6
-export OMP_STACKSIZE=2048m
+export KMP_AFFINITY=${KMP_AFFINITY_MAKE_OROG}
+export OMP_NUM_THREADS=${OMP_NUM_THREADS_MAKE_OROG}
+export OMP_STACKSIZE=${OMP_STACKSIZE_MAKE_OROG}
 #
 #-----------------------------------------------------------------------
 #
@@ -94,7 +95,7 @@ export OMP_STACKSIZE=2048m
 #
 #-----------------------------------------------------------------------
 #
-case $MACHINE in
+case "$MACHINE" in
 
   "WCOSS_CRAY")
     { save_shell_opts; set +x; } > /dev/null 2>&1
@@ -102,9 +103,8 @@ case $MACHINE in
     module load PrgEnv-intel cfp-intel-sandybridge/1.1.0
     module list
     { restore_shell_opts; } > /dev/null 2>&1
-    export NODES=1
-    export APRUN="aprun -n 1 -N 1 -j 1 -d 1 -cc depth"
-    export KMP_AFFINITY=disabled
+    NODES=1
+    APRUN="aprun -n 1 -N 1 -j 1 -d 1 -cc depth"
     ulimit -s unlimited
     ulimit -a
     ;;
@@ -130,11 +130,11 @@ case $MACHINE in
   "JET")
     ulimit -s unlimited
     ulimit -a
-    export APRUN="time"
+    APRUN="time"
     ;;
 
   "ODIN")
-    export APRUN="srun -n 1"
+    APRUN="srun -n 1"
     ulimit -s unlimited
     ulimit -a
     ;;
@@ -144,14 +144,23 @@ case $MACHINE in
     ;;
 
   "STAMPEDE")
-    export APRUN="time"
+    APRUN="time"
+    ;;
+
+  "MACOS")
+    APRUN=time
+    ;;
+
+  "LINUX")
+    APRUN=time
+    ulimit -s unlimited
+    ulimit -a
     ;;
 
   *)
     print_err_msg_exit "\
 Run command has not been specified for this machine:
-  MACHINE = \"$MACHINE\"
-  APRUN = \"$APRUN\""
+  MACHINE = \"$MACHINE\""
     ;;
 
 esac
@@ -226,7 +235,8 @@ cp_vrfy ${TOPO_DIR}/gmted2010.30sec.int fort.235
 mosaic_fn="${CRES}${DOT_OR_USCORE}mosaic.halo${NHW}.nc"
 mosaic_fp="$FIXLAM/${mosaic_fn}"
 
-grid_fn=$( get_charvar_from_netcdf "${mosaic_fp}" "gridfiles" )
+grid_fn=$( get_charvar_from_netcdf "${mosaic_fp}" "gridfiles" ) || print_err_msg_exit "\
+  get_charvar_from_netcdf function failed."
 grid_fp="${FIXLAM}/${grid_fn}"
 #
 #-----------------------------------------------------------------------
@@ -284,53 +294,15 @@ cat "${input_redirect_fn}"
 #
 #-----------------------------------------------------------------------
 #
-print_info_msg "$VERBOSE" "
+print_info_msg "$VERBOSE" "\
 Starting orography file generation..."
 
-case $MACHINE in
-
-  "WCOSS_CRAY")
-#
-# On WCOSS and WCOSS_C, use cfp to run multiple tiles simulatneously for
-# the orography.  For now, we have only one tile in the regional case,
-# but in the future we will have more.  First, create an input file for
-# cfp.
-#
-    ufs_utils_ushdir="${UFS_UTILS_DIR}/ush"
-    res="0"  # What should this be set to???
-    printf "%s\n" "\
-${ufs_utils_ushdir}/${orog_gen_scr} \
-$res \
-${TILE_RGNL} \
-${FIXLAM} \
-${raw_dir} \
-${UFS_UTILS_DIR} \
-${TOPO_DIR} \
-${tmp_dir}" \
-    >> ${tmp_dir}/orog.file1
-    aprun -j 1 -n 4 -N 4 -d 6 -cc depth cfp ${tmp_dir}/orog.file1
-    rm_vrfy ${tmp_dir}/orog.file1
-    ;;
-
-  "WCOSS_DELL_P3")
-    ufs_utils_ushdir="${UFS_UTILS_DIR}/ush"
-    res="0"  # What should this be set to???
-    "${exec_fp}" < "${input_redirect_fn}" || \
+$APRUN "${exec_fp}" < "${input_redirect_fn}" || \
       print_err_msg_exit "\
 Call to executable (exec_fp) that generates the raw orography file returned
 with nonzero exit code:
   exec_fp = \"${exec_fp}\""
-    ;;
 
-  "CHEYENNE" | "HERA" | "ORION" | "JET" | "ODIN" | "STAMPEDE")
-    $APRUN "${exec_fp}" < "${input_redirect_fn}" || \
-      print_err_msg_exit "\
-Call to executable (exec_fp) that generates the raw orography file returned
-with nonzero exit code:
-  exec_fp = \"${exec_fp}\""
-    ;;
-
-esac
 #
 # Change location to the original directory.
 #
@@ -350,7 +322,64 @@ fn_suffix_with_halo="tile${TILE_RGNL}.halo${NHW}.nc"
 raw_orog_fn="${raw_orog_fn_prefix}.${fn_suffix_with_halo}"
 raw_orog_fp="${raw_dir}/${raw_orog_fn}"
 mv_vrfy "${raw_orog_fp_orig}" "${raw_orog_fp}"
+#
+#-----------------------------------------------------------------------
+#
+# Call the code to generate the two orography statistics files (large-
+# and small-scale) needed for the drag suite in the FV3_HRRR physics
+# suite.
+#
+#-----------------------------------------------------------------------
+#
+if [ "${CCPP_PHYS_SUITE}" = "FV3_HRRR" ]; then
+  tmp_dir="${OROG_DIR}/temp_orog_data"
+  mkdir_vrfy -p ${tmp_dir}
+  cd_vrfy ${tmp_dir}
+  mosaic_fn_gwd="${CRES}${DOT_OR_USCORE}mosaic.halo${NH4}.nc"
+  mosaic_fp_gwd="$FIXLAM/${mosaic_fn_gwd}"
+  grid_fn_gwd=$( get_charvar_from_netcdf "${mosaic_fp_gwd}" "gridfiles" ) || \
+    print_err_msg_exit "get_charvar_from_netcdf function failed."
+  grid_fp_gwd="${FIXLAM}/${grid_fn_gwd}"
+  ls_fn="geo_em.d01.lat-lon.2.5m.HGT_M.nc"
+  ss_fn="HGT.Beljaars_filtered.lat-lon.30s_res.nc"
+  create_symlink_to_file target="${grid_fp_gwd}" symlink="${tmp_dir}/${grid_fn_gwd}" \
+                         relative="TRUE"
+  create_symlink_to_file target="${FIXam}/${ls_fn}" symlink="${tmp_dir}/${ls_fn}" \
+                         relative="TRUE"
+  create_symlink_to_file target="${FIXam}/${ss_fn}" symlink="${tmp_dir}/${ss_fn}" \
+                         relative="TRUE"
 
+  input_redirect_fn="grid_info.dat"
+  cat > "${input_redirect_fn}" <<EOF
+${TILE_RGNL}
+${CRES:1}
+${NH4}
+EOF
+
+  exec_fn="orog_gsl"
+  exec_fp="$EXECDIR/${exec_fn}"
+  if [ ! -f "${exec_fp}" ]; then
+    print_err_msg_exit "\
+The executable (exec_fp) for generating the GSL orography GWD data files
+does not exist:
+  exec_fp = \"${exec_fp}\"
+Please ensure that you've built this executable."
+  fi
+
+  print_info_msg "$VERBOSE" "
+Starting orography file generation..."
+
+  $APRUN "${exec_fp}" < "${input_redirect_fn}" || \
+      print_err_msg_exit "\
+Call to executable (exec_fp) that generates the GSL orography GWD data files
+returned with nonzero exit code:
+  exec_fp = \"${exec_fp}\""
+
+  mv_vrfy "${CRES}${DOT_OR_USCORE}oro_data_ss.tile${TILE_RGNL}.halo${NH0}.nc" \
+          "${CRES}${DOT_OR_USCORE}oro_data_ls.tile${TILE_RGNL}.halo${NH0}.nc" \
+          "${OROG_DIR}"
+ 
+fi
 #
 #-----------------------------------------------------------------------
 #
@@ -458,7 +487,8 @@ cp_vrfy "${raw_orog_fp}" "${filtered_orog_fp}"
 # filtering executable will run) with the same name as the grid file and
 # point it to the actual grid file specified by grid_fp.
 #
-ln_vrfy -fs --relative "${grid_fp}" "${filter_dir}/${grid_fn}"
+create_symlink_to_file target="${grid_fp}" symlink="${filter_dir}/${grid_fn}" \
+                       relative="TRUE"
 #
 # Create the namelist file (in the filter_dir directory) that the orography
 # filtering executable will read in.
@@ -470,7 +500,6 @@ cat > "${filter_dir}/input.nml" <<EOF
   mask_field = "land_frac"
   regional = .true.
   stretch_fac = ${STRETCH_FAC}
-  refine_ratio = ${refine_ratio}
   res = $res
 /
 EOF

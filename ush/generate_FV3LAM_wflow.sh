@@ -10,6 +10,15 @@
 #-----------------------------------------------------------------------
 #
 function generate_FV3LAM_wflow() {
+printf "\
+========================================================================
+========================================================================
+
+Starting experiment generation...
+
+========================================================================
+========================================================================
+"
 #
 #-----------------------------------------------------------------------
 #
@@ -19,7 +28,11 @@ function generate_FV3LAM_wflow() {
 #
 #-----------------------------------------------------------------------
 #
-local scrfunc_fp=$( readlink -f "${BASH_SOURCE[0]}" )
+if [[ $(uname -s) == Darwin ]]; then
+  local scrfunc_fp=$( greadlink -f "${BASH_SOURCE[0]}" )
+else
+  local scrfunc_fp=$( readlink -f "${BASH_SOURCE[0]}" )
+fi
 local scrfunc_fn=$( basename "${scrfunc_fp}" )
 local scrfunc_dir=$( dirname "${scrfunc_fp}" )
 #
@@ -47,8 +60,6 @@ ushdir="${scrfunc_dir}"
 #
 . $ushdir/source_util_funcs.sh
 . $ushdir/set_FV3nml_sfc_climo_filenames.sh
-. $ushdir/set_FV3nml_stoch_params.sh
-. $ushdir/create_diag_table_files.sh
 #
 #-----------------------------------------------------------------------
 #
@@ -106,7 +117,6 @@ if [ $pyerrors -gt 0 ];then
 
 "
 fi
-
 #
 #-----------------------------------------------------------------------
 #
@@ -150,16 +160,26 @@ WFLOW_XML_FP="$EXPTDIR/${WFLOW_XML_FN}"
 #
 #-----------------------------------------------------------------------
 #
-ensmem_indx_name="\"\""
-uscore_ensmem_name="\"\""
-slash_ensmem_subdir="\"\""
-if [ "${DO_ENSEMBLE}" = "TRUE" ]; then
-  ensmem_indx_name="mem"
-  uscore_ensmem_name="_mem#${ensmem_indx_name}#"
-  slash_ensmem_subdir="/mem#${ensmem_indx_name}#"
-fi
+if [ "${WORKFLOW_MANAGER}" = "rocoto" ]; then
 
-settings="\
+  template_xml_fp="${TEMPLATE_DIR}/${WFLOW_XML_FN}"
+
+  print_info_msg "
+Creating rocoto workflow XML file (WFLOW_XML_FP) from jinja template XML
+file (template_xml_fp):
+  template_xml_fp = \"${template_xml_fp}\"
+  WFLOW_XML_FP = \"${WFLOW_XML_FP}\""
+
+  ensmem_indx_name="\"\""
+  uscore_ensmem_name="\"\""
+  slash_ensmem_subdir="\"\""
+  if [ "${DO_ENSEMBLE}" = "TRUE" ]; then
+    ensmem_indx_name="mem"
+    uscore_ensmem_name="_mem#${ensmem_indx_name}#"
+    slash_ensmem_subdir="/mem#${ensmem_indx_name}#"
+  fi
+
+  settings="\
 #
 # Parameters needed by the job scheduler.
 #
@@ -184,6 +204,40 @@ settings="\
   'make_lbcs_tn': ${MAKE_LBCS_TN}
   'run_fcst_tn': ${RUN_FCST_TN}
   'run_post_tn': ${RUN_POST_TN}
+  'get_obs_ccpa_tn': ${GET_OBS_CCPA_TN}
+  'get_obs_ndas_tn': ${GET_OBS_NDAS_TN}
+  'get_obs_mrms_tn': ${GET_OBS_MRMS_TN}
+  'vx_tn': ${VX_TN}
+  'vx_gridstat_tn': ${VX_GRIDSTAT_TN}
+  'vx_gridstat_refc_tn': ${VX_GRIDSTAT_REFC_TN}
+  'vx_gridstat_retop_tn': ${VX_GRIDSTAT_RETOP_TN}
+  'vx_gridstat_03h_tn': ${VX_GRIDSTAT_03h_TN}
+  'vx_gridstat_06h_tn': ${VX_GRIDSTAT_06h_TN}
+  'vx_gridstat_24h_tn': ${VX_GRIDSTAT_24h_TN}
+  'vx_pointstat_tn': ${VX_POINTSTAT_TN}
+  'vx_ensgrid_tn': ${VX_ENSGRID_TN}
+  'vx_ensgrid_refc_tn': ${VX_ENSGRID_REFC_TN}
+  'vx_ensgrid_retop_tn': ${VX_ENSGRID_RETOP_TN}
+  'vx_ensgrid_03h_tn': ${VX_ENSGRID_03h_TN}
+  'vx_ensgrid_06h_tn': ${VX_ENSGRID_06h_TN}
+  'vx_ensgrid_24h_tn': ${VX_ENSGRID_24h_TN}
+  'vx_ensgrid_mean_tn': ${VX_ENSGRID_MEAN_TN}
+  'vx_ensgrid_prob_tn': ${VX_ENSGRID_PROB_TN}
+  'vx_ensgrid_mean_03h_tn': ${VX_ENSGRID_MEAN_03h_TN}
+  'vx_ensgrid_prob_03h_tn': ${VX_ENSGRID_PROB_03h_TN}
+  'vx_ensgrid_mean_06h_tn': ${VX_ENSGRID_MEAN_06h_TN}
+  'vx_ensgrid_prob_06h_tn': ${VX_ENSGRID_PROB_06h_TN}
+  'vx_ensgrid_mean_24h_tn': ${VX_ENSGRID_MEAN_24h_TN}
+  'vx_ensgrid_prob_24h_tn': ${VX_ENSGRID_PROB_24h_TN}
+  'vx_ensgrid_prob_refc_tn': ${VX_ENSGRID_PROB_REFC_TN}
+  'vx_ensgrid_prob_retop_tn': ${VX_ENSGRID_PROB_RETOP_TN}
+  'vx_enspoint_tn': ${VX_ENSPOINT_TN}
+  'vx_enspoint_mean_tn': ${VX_ENSPOINT_MEAN_TN}
+  'vx_enspoint_prob_tn': ${VX_ENSPOINT_PROB_TN}
+#
+# Entity used to load the module file for each GET_OBS_* task.
+#
+  'get_obs': ${GET_OBS}
 #
 # Number of nodes to use for each task.
 #
@@ -196,11 +250,22 @@ settings="\
   'nnodes_make_lbcs': ${NNODES_MAKE_LBCS}
   'nnodes_run_fcst': ${NNODES_RUN_FCST}
   'nnodes_run_post': ${NNODES_RUN_POST}
+  'nnodes_get_obs_ccpa': ${NNODES_GET_OBS_CCPA}
+  'nnodes_get_obs_mrms': ${NNODES_GET_OBS_MRMS}
+  'nnodes_get_obs_ndas': ${NNODES_GET_OBS_NDAS}
+  'nnodes_vx_gridstat': ${NNODES_VX_GRIDSTAT}
+  'nnodes_vx_pointstat': ${NNODES_VX_POINTSTAT}
+  'nnodes_vx_ensgrid': ${NNODES_VX_ENSGRID}
+  'nnodes_vx_ensgrid_mean': ${NNODES_VX_ENSGRID_MEAN}
+  'nnodes_vx_ensgrid_prob': ${NNODES_VX_ENSGRID_PROB}
+  'nnodes_vx_enspoint': ${NNODES_VX_ENSPOINT}
+  'nnodes_vx_enspoint_mean': ${NNODES_VX_ENSPOINT_MEAN}
+  'nnodes_vx_enspoint_prob': ${NNODES_VX_ENSPOINT_PROB}
 #
 # Number of cores used for a task
 #
   'ncores_run_fcst': ${PE_MEMBER01}
-  'native_run_fcst': --cpus-per-task 4 --exclusive
+  'native_run_fcst': --cpus-per-task ${OMP_NUM_THREADS_RUN_FCST} --exclusive
 #
 # Number of logical processes per node for each task.  If running without
 # threading, this is equal to the number of MPI processes per node.
@@ -214,6 +279,17 @@ settings="\
   'ppn_make_lbcs': ${PPN_MAKE_LBCS}
   'ppn_run_fcst': ${PPN_RUN_FCST}
   'ppn_run_post': ${PPN_RUN_POST}
+  'ppn_get_obs_ccpa': ${PPN_GET_OBS_CCPA}
+  'ppn_get_obs_mrms': ${PPN_GET_OBS_MRMS}
+  'ppn_get_obs_ndas': ${PPN_GET_OBS_NDAS}
+  'ppn_vx_gridstat': ${PPN_VX_GRIDSTAT}
+  'ppn_vx_pointstat': ${PPN_VX_POINTSTAT}
+  'ppn_vx_ensgrid': ${PPN_VX_ENSGRID}
+  'ppn_vx_ensgrid_mean': ${PPN_VX_ENSGRID_MEAN}
+  'ppn_vx_ensgrid_prob': ${PPN_VX_ENSGRID_PROB}
+  'ppn_vx_enspoint': ${PPN_VX_ENSPOINT}
+  'ppn_vx_enspoint_mean': ${PPN_VX_ENSPOINT_MEAN}
+  'ppn_vx_enspoint_prob': ${PPN_VX_ENSPOINT_PROB}
 #
 # Maximum wallclock time for each task.
 #
@@ -226,6 +302,17 @@ settings="\
   'wtime_make_lbcs': ${WTIME_MAKE_LBCS}
   'wtime_run_fcst': ${WTIME_RUN_FCST}
   'wtime_run_post': ${WTIME_RUN_POST}
+  'wtime_get_obs_ccpa': ${WTIME_GET_OBS_CCPA}
+  'wtime_get_obs_mrms': ${WTIME_GET_OBS_MRMS}
+  'wtime_get_obs_ndas': ${WTIME_GET_OBS_NDAS}
+  'wtime_vx_gridstat': ${WTIME_VX_GRIDSTAT}
+  'wtime_vx_pointstat': ${WTIME_VX_POINTSTAT}
+  'wtime_vx_ensgrid': ${WTIME_VX_ENSGRID}
+  'wtime_vx_ensgrid_mean': ${WTIME_VX_ENSGRID_MEAN}
+  'wtime_vx_ensgrid_prob': ${WTIME_VX_ENSGRID_PROB}
+  'wtime_vx_enspoint': ${WTIME_VX_ENSPOINT}
+  'wtime_vx_enspoint_mean': ${WTIME_VX_ENSPOINT_MEAN}
+  'wtime_vx_enspoint_prob': ${WTIME_VX_ENSPOINT_PROB}
 #
 # Maximum number of tries for each task.
 #
@@ -238,12 +325,55 @@ settings="\
   'maxtries_make_lbcs': ${MAXTRIES_MAKE_LBCS}
   'maxtries_run_fcst': ${MAXTRIES_RUN_FCST}
   'maxtries_run_post': ${MAXTRIES_RUN_POST}
+  'maxtries_get_obs_ccpa': ${MAXTRIES_GET_OBS_CCPA}
+  'maxtries_get_obs_mrms': ${MAXTRIES_GET_OBS_MRMS}
+  'maxtries_get_obs_ndas': ${MAXTRIES_GET_OBS_NDAS}
+  'maxtries_vx_gridstat': ${MAXTRIES_VX_GRIDSTAT}
+  'maxtries_vx_gridstat_refc': ${MAXTRIES_VX_GRIDSTAT_REFC}
+  'maxtries_vx_gridstat_retop': ${MAXTRIES_VX_GRIDSTAT_RETOP}
+  'maxtries_vx_gridstat_03h': ${MAXTRIES_VX_GRIDSTAT_03h}
+  'maxtries_vx_gridstat_06h': ${MAXTRIES_VX_GRIDSTAT_06h}
+  'maxtries_vx_gridstat_24h': ${MAXTRIES_VX_GRIDSTAT_24h}
+  'maxtries_vx_pointstat': ${MAXTRIES_VX_POINTSTAT}
+  'maxtries_vx_ensgrid': ${MAXTRIES_VX_ENSGRID}
+  'maxtries_vx_ensgrid_refc': ${MAXTRIES_VX_ENSGRID_REFC}
+  'maxtries_vx_ensgrid_retop': ${MAXTRIES_VX_ENSGRID_RETOP}
+  'maxtries_vx_ensgrid_03h': ${MAXTRIES_VX_ENSGRID_03h}
+  'maxtries_vx_ensgrid_06h': ${MAXTRIES_VX_ENSGRID_06h}
+  'maxtries_vx_ensgrid_24h': ${MAXTRIES_VX_ENSGRID_24h}
+  'maxtries_vx_ensgrid_mean': ${MAXTRIES_VX_ENSGRID_MEAN}
+  'maxtries_vx_ensgrid_prob': ${MAXTRIES_VX_ENSGRID_PROB}
+  'maxtries_vx_ensgrid_mean_03h': ${MAXTRIES_VX_ENSGRID_MEAN_03h}
+  'maxtries_vx_ensgrid_prob_03h': ${MAXTRIES_VX_ENSGRID_PROB_03h}
+  'maxtries_vx_ensgrid_mean_06h': ${MAXTRIES_VX_ENSGRID_MEAN_06h}
+  'maxtries_vx_ensgrid_prob_06h': ${MAXTRIES_VX_ENSGRID_PROB_06h}
+  'maxtries_vx_ensgrid_mean_24h': ${MAXTRIES_VX_ENSGRID_MEAN_24h}
+  'maxtries_vx_ensgrid_prob_24h': ${MAXTRIES_VX_ENSGRID_PROB_24h}
+  'maxtries_vx_ensgrid_prob_refc': ${MAXTRIES_VX_ENSGRID_PROB_REFC}
+  'maxtries_vx_ensgrid_prob_retop': ${MAXTRIES_VX_ENSGRID_PROB_RETOP}
+  'maxtries_vx_enspoint': ${MAXTRIES_VX_ENSPOINT}
+  'maxtries_vx_enspoint_mean': ${MAXTRIES_VX_ENSPOINT_MEAN}
+  'maxtries_vx_enspoint_prob': ${MAXTRIES_VX_ENSPOINT_PROB}
 #
-# Flags that specify whether to run the preprocessing tasks.
+# Flags that specify whether to run the preprocessing or
+# verification-related tasks.
 #
   'run_task_make_grid': ${RUN_TASK_MAKE_GRID}
   'run_task_make_orog': ${RUN_TASK_MAKE_OROG}
   'run_task_make_sfc_climo': ${RUN_TASK_MAKE_SFC_CLIMO}
+  'run_task_get_extrn_ics': ${RUN_TASK_GET_EXTRN_ICS}
+  'run_task_get_extrn_lbcs': ${RUN_TASK_GET_EXTRN_LBCS}
+  'run_task_make_ics': ${RUN_TASK_MAKE_ICS}
+  'run_task_make_lbcs': ${RUN_TASK_MAKE_LBCS}
+  'run_task_run_fcst': ${RUN_TASK_RUN_FCST}
+  'run_task_run_post': ${RUN_TASK_RUN_POST}
+  'run_task_get_obs_ccpa': ${RUN_TASK_GET_OBS_CCPA}
+  'run_task_get_obs_mrms': ${RUN_TASK_GET_OBS_MRMS}
+  'run_task_get_obs_ndas': ${RUN_TASK_GET_OBS_NDAS}
+  'run_task_vx_gridstat': ${RUN_TASK_VX_GRIDSTAT}
+  'run_task_vx_pointstat': ${RUN_TASK_VX_POINTSTAT}
+  'run_task_vx_ensgrid': ${RUN_TASK_VX_ENSGRID}
+  'run_task_vx_enspoint': ${RUN_TASK_VX_ENSPOINT}
 #
 # Number of physical cores per node for the current machine.
 #
@@ -253,6 +383,7 @@ settings="\
 #
   'jobsdir': $JOBSDIR
   'logdir': $LOGDIR
+  'scriptsdir': $SCRIPTSDIR
   'cycle_basedir': ${CYCLE_BASEDIR}
   'global_var_defns_fp': ${GLOBAL_VAR_DEFNS_FP}
   'load_modules_run_task_fp': ${LOAD_MODULES_RUN_TASK_FP}
@@ -274,6 +405,23 @@ settings="\
 #
   'fcst_len_hrs': ${FCST_LEN_HRS}
 #
+# Inline post
+#
+  'write_dopost': ${WRITE_DOPOST}
+#
+# METPlus-specific information
+#
+  'model': ${MODEL}
+  'met_install_dir': ${MET_INSTALL_DIR}
+  'met_bin_exec': ${MET_BIN_EXEC}
+  'metplus_path': ${METPLUS_PATH}
+  'vx_config_dir': ${VX_CONFIG_DIR}
+  'metplus_conf': ${METPLUS_CONF}
+  'met_config': ${MET_CONFIG}
+  'ccpa_obs_dir': ${CCPA_OBS_DIR}
+  'mrms_obs_dir': ${MRMS_OBS_DIR}
+  'ndas_obs_dir': ${NDAS_OBS_DIR}
+#
 # Ensemble-related parameters.
 #
   'do_ensemble': ${DO_ENSEMBLE}
@@ -282,9 +430,15 @@ settings="\
   'ensmem_indx_name': ${ensmem_indx_name}
   'uscore_ensmem_name': ${uscore_ensmem_name}
   'slash_ensmem_subdir': ${slash_ensmem_subdir}
+#
+# Parameters associated with subhourly post-processed output
+#
+  'sub_hourly_post': ${SUB_HOURLY_POST}
+  'delta_min': ${DT_SUBHOURLY_POST_MNTS}
+  'first_fv3_file_tstr': "000:"`$DATE_UTIL -d "${DATE_FIRST_CYCL} +${DT_ATMOS} seconds" +%M:%S`
 " # End of "settings" variable.
 
-print_info_msg $VERBOSE "
+  print_info_msg "$VERBOSE" "
 The variable \"settings\" specifying values of the rococo XML variables
 has been set as follows:
 #-----------------------------------------------------------------------
@@ -292,16 +446,14 @@ settings =
 $settings"
 
 #
-# Set the full path to the template rocoto XML file.  Then call a python
-# script to generate the experiment's actual XML file from this template
-# file.
+# Call the python script to generate the experiment's actual XML file 
+# from the jinja template file.
 #
-template_xml_fp="${TEMPLATE_DIR}/${WFLOW_XML_FN}"
-$USHDIR/fill_jinja_template.py -q \
-                               -u "${settings}" \
-                               -t ${template_xml_fp} \
-                               -o ${WFLOW_XML_FP} || \
-  print_err_msg_exit "\
+  $USHDIR/fill_jinja_template.py -q \
+                                 -u "${settings}" \
+                                 -t ${template_xml_fp} \
+                                 -o ${WFLOW_XML_FP} || \
+    print_err_msg_exit "\
 Call to python script fill_jinja_template.py to create a rocoto workflow
 XML file from a template file failed.  Parameters passed to this script
 are:
@@ -312,73 +464,8 @@ are:
   Namelist settings specified on command line:
     settings =
 $settings"
-#
-#-----------------------------------------------------------------------
-#
-# Create the cycle directories.
-#
-#-----------------------------------------------------------------------
-#
-print_info_msg "$VERBOSE" "
-Creating the cycle directories..."
 
-for (( i=0; i<${NUM_CYCLES}; i++ )); do
-  cdate="${ALL_CDATES[$i]}"
-  cycle_dir="${CYCLE_BASEDIR}/$cdate"
-  mkdir_vrfy -p "${cycle_dir}"
-done
-#
-#-----------------------------------------------------------------------
-#
-# For select workflow tasks, copy the system-specific environment and
-# module settings README file from the ufs-srweather-app repository to 
-# the appropriate subdirectory under the workflow directory tree.  In 
-# principle, sourcing this file is better than having hard-coded module
-# files for tasks because the copied module files will always be 
-# up-to-date.
-#
-#-----------------------------------------------------------------------
-#
-#machine=${MACHINE,,}
-
-#cd_vrfy "${MODULES_DIR}/tasks/$machine"
-
-#cp_vrfy -f "${SR_WX_APP_TOP_DIR}/docs/README_${machine}_intel.txt" "${MAKE_GRID_TN}"
-#cp_vrfy -f "${SR_WX_APP_TOP_DIR}/docs/README_${machine}_intel.txt" "${MAKE_OROG_TN}"
-#cp_vrfy -f "${SR_WX_APP_TOP_DIR}/docs/README_${machine}_intel.txt" "${MAKE_SFC_CLIMO_TN}"
-#cp_vrfy -f "${SR_WX_APP_TOP_DIR}/docs/README_${machine}_intel.txt" "${MAKE_ICS_TN}"
-#cp_vrfy -f "${SR_WX_APP_TOP_DIR}/docs/README_${machine}_intel.txt" "${MAKE_LBCS_TN}"
-#if [ $MACHINE = "WCOSS_CRAY" -o $MACHINE = "WCOSS_DELL_P3" ] ; then
-#  cp_vrfy -f "${UFS_WTHR_MDL_DIR}/modulefiles/${machine}/fv3" "${RUN_FCST_TN}"
-#else
-#  cp_vrfy -f "${UFS_WTHR_MDL_DIR}/modulefiles/${machine}.intel/fv3" "${RUN_FCST_TN}"
-#fi
-#cp_vrfy -f "${SR_WX_APP_TOP_DIR}/docs/README_${machine}_intel.txt" "${RUN_FCST_TN}"
-
-task_names=( "${MAKE_GRID_TN}" "${MAKE_OROG_TN}" "${MAKE_SFC_CLIMO_TN}" "${MAKE_ICS_TN}" "${MAKE_LBCS_TN}" "${RUN_FCST_TN}" )
-#
-# Only some platforms build EMC_post using modules, and some machines 
-# require a different EMC_post modulefile name.
-#
-#if [ "${MACHINE}" = "CHEYENNE" ]; then
-#  print_info_msg "No post modulefile needed for ${MACHINE}"
-#elif [ "${MACHINE}" = "WCOSS_CRAY" ]; then
-#  cp_vrfy -f "${EMC_POST_DIR}/modulefiles/post/v8.0.0-cray-intel" "${RUN_POST_TN}"
-#  cp_vrfy -f "${SR_WX_APP_TOP_DIR}/docs/README_${machine}_intel.txt" "${RUN_POST_TN}"
-#  task_names+=("${RUN_POST_TN}")
-#else
-#  cp_vrfy -f "${SR_WX_APP_TOP_DIR}/docs/README_${machine}_intel.txt" "${RUN_POST_TN}"
-#  task_names+=("${RUN_POST_TN}")
-#fi
-
-#for task in "${task_names[@]}"; do
-#  modulefile_local="${task}.local"
-#  if [ -f ${modulefile_local} ]; then
-#    cat "${modulefile_local}" >> "${task}"
-#  fi
-#done
-
-#cd_vrfy -
+fi
 #
 #-----------------------------------------------------------------------
 #
@@ -387,12 +474,14 @@ task_names=( "${MAKE_GRID_TN}" "${MAKE_OROG_TN}" "${MAKE_SFC_CLIMO_TN}" "${MAKE_
 #
 #-----------------------------------------------------------------------
 #
-print_info_msg "
+print_info_msg "$VERBOSE" "
 Creating symlink in the experiment directory (EXPTDIR) that points to the
 workflow launch script (WFLOW_LAUNCH_SCRIPT_FP):
   EXPTDIR = \"${EXPTDIR}\"
   WFLOW_LAUNCH_SCRIPT_FP = \"${WFLOW_LAUNCH_SCRIPT_FP}\""
-ln_vrfy -fs "${WFLOW_LAUNCH_SCRIPT_FP}" "$EXPTDIR"
+create_symlink_to_file target="${WFLOW_LAUNCH_SCRIPT_FP}" \
+                       symlink="${EXPTDIR}/${WFLOW_LAUNCH_SCRIPT_FN}" \
+                       relative="FALSE"
 #
 #-----------------------------------------------------------------------
 #
@@ -406,12 +495,16 @@ if [ "${USE_CRON_TO_RELAUNCH}" = "TRUE" ]; then
 #
 # Make a backup copy of the user's crontab file and save it in a file.
 #
-  time_stamp=$( date "+%F_%T" )
+  time_stamp=$( $DATE_UTIL "+%F_%T" )
   crontab_backup_fp="$EXPTDIR/crontab.bak.${time_stamp}"
-  print_info_msg "
+  print_info_msg "$VERBOSE" "
 Copying contents of user cron table to backup file:
   crontab_backup_fp = \"${crontab_backup_fp}\""
-  crontab -l > ${crontab_backup_fp}
+  if [ "$MACHINE" = "WCOSS_DELL_P3" ]; then
+    cp_vrfy "/u/$USER/cron/mycrontab" "${crontab_backup_fp}"
+  else
+    crontab -l > ${crontab_backup_fp}
+  fi
 #
 # Below, we use "grep" to determine whether the crontab line that the
 # variable CRONTAB_LINE contains is already present in the cron table.
@@ -419,7 +512,7 @@ Copying contents of user cron table to backup file:
 # CRONTAB_LINE with backslashes.  Do this next.
 #
   crontab_line_esc_astr=$( printf "%s" "${CRONTAB_LINE}" | \
-                           sed -r -e "s%[*]%\\\\*%g" )
+                           $SED -r -e "s%[*]%\\\\*%g" )
 #
 # In the grep command below, the "^" at the beginning of the string be-
 # ing passed to grep is a start-of-line anchor while the "$" at the end
@@ -434,7 +527,11 @@ Copying contents of user cron table to backup file:
 # string in crontab_line_esc_astr (in which case it does something more
 # than the command portion of the string in crontab_line_esc_astr does).
 #
-  grep_output=$( crontab -l | grep "^${crontab_line_esc_astr}$" )
+  if [ "$MACHINE" = "WCOSS_DELL_P3" ];then
+    grep_output=$( grep "^${crontab_line_esc_astr}$" "/u/$USER/cron/mycrontab" )
+  else
+    grep_output=$( crontab -l | grep "^${crontab_line_esc_astr}$" )
+  fi
   exit_status=$?
 
   if [ "${exit_status}" -eq 0 ]; then
@@ -446,12 +543,16 @@ added:
 
   else
 
-    print_info_msg "
-Adding the following line to the cron table in order to automatically
-resubmit FV3-LAM workflow:
+    print_info_msg "$VERBOSE" "
+Adding the following line to the user's cron table in order to automatically
+resubmit SRW workflow:
   CRONTAB_LINE = \"${CRONTAB_LINE}\""
 
-    ( crontab -l; echo "${CRONTAB_LINE}" ) | crontab -
+    if [ "$MACHINE" = "WCOSS_DELL_P3" ];then
+      echo "${CRONTAB_LINE}" >> "/u/$USER/cron/mycrontab"      
+    else
+      ( crontab -l; echo "${CRONTAB_LINE}" ) | crontab -
+    fi
 
   fi
 
@@ -459,16 +560,39 @@ fi
 #
 #-----------------------------------------------------------------------
 #
-# Copy fixed files from system directory to the FIXam directory (which
-# is under the experiment directory).  Note that some of these files get
-# renamed during the copy process.
+# Create the FIXam directory under the experiment directory.  In NCO mode,
+# this will be a symlink to the directory specified in FIXgsm, while in
+# community mode, it will be an actual directory with files copied into
+# it from FIXgsm.
 #
 #-----------------------------------------------------------------------
 #
+# First, consider NCO mode.
+#
+if [ "${RUN_ENVIR}" = "nco" ]; then
 
-# In NCO mode, we assume the following copy operation is done beforehand,
-# but that can be changed.
-if [ "${RUN_ENVIR}" != "nco" ]; then
+  ln_vrfy -fsn "$FIXgsm" "$FIXam"
+#
+# Resolve the target directory that the FIXam symlink points to and check 
+# that it exists.
+#
+  path_resolved=$( $READLINK -m "$FIXam" )
+  if [ ! -d "${path_resolved}" ]; then
+    print_err_msg_exit "\
+In order to be able to generate a forecast experiment in NCO mode (i.e.
+when RUN_ENVIR set to \"nco\"), the path specified by FIXam after resolving
+all symlinks (path_resolved) must be an existing directory (but in this
+case isn't):
+  RUN_ENVIR = \"${RUN_ENVIR}\"
+  FIXam = \"$FIXam\"
+  path_resolved = \"${path_resolved}\"
+Please ensure that path_resolved is an existing directory and then rerun
+the experiment generation script."
+  fi
+#
+# Now consider community mode.
+#
+else
 
   print_info_msg "$VERBOSE" "
 Copying fixed files from system directory (FIXgsm) to a subdirectory
@@ -519,67 +643,14 @@ Copying the CCPP physics suite definition XML file from its location in
 the forecast model directory sturcture to the experiment directory..."
 cp_vrfy "${CCPP_PHYS_SUITE_IN_CCPP_FP}" "${CCPP_PHYS_SUITE_FP}"
 #
-#-----------------------------------------------------------------------
+# Copy the field dictionary file from its location in the
+# clone of the FV3 code repository to the experiment directory (EXPT-
+# DIR).
 #
-# Copy the forecast model executable from its location in the directory
-# in which the forecast model repository was cloned (UFS_WTHR_MDL_DIR)
-# to the executables directory (EXECDIR).
-#
-# Note that if there is already an experiment that is running the forecast
-# task (so that the forecast model executable in EXECDIR is in use) and
-# the user tries to generate another experiment, the generation of this
-# second experiment will fail because the operating system won't allow
-# the existing executable in EXECDIR to be overwritten (because it is
-# "busy", i.e. in use by the first experiment).  For this reason, below,
-# we try to prevent this situation by comparing the ages of the source
-# and target executables and attempting the copy only if the source one
-# is newer (or if the target doesn't exist).  This will very likely prevent
-# the situation described above, but it doesn't guarantee that it will
-# never happen (it will still happen if an experiment is running a forecast
-# while the user rebuilts the forecast model and attempts to generate a
-# new experiment.  For this reason, this copy operation should really be
-# performed duirng the build step, not here.
-#
-# Question:
-# Why doesn't the build script(s) perform this action?  It should...
-#
-#-----------------------------------------------------------------------
-#
-exec_fn="NEMS.exe"
-exec_fp="${SR_WX_APP_TOP_DIR}/bin/${exec_fn}"
-#Check for the old build location for fv3 executable
-if [ ! -f "${exec_fp}" ]; then
-  exec_fp_alt="${UFS_WTHR_MDL_DIR}/build/${exec_fn}"
-  if [ ! -f "${exec_fp_alt}" ]; then
-    print_err_msg_exit "\
-The executable (exec_fp) for running the forecast model does not exist:
-  exec_fp = \"${exec_fp}\"
-Please ensure that you've built this executable."
-  else
-    exec_fp="${exec_fp_alt}"
-  fi
-fi
-
-if [ ! -f "${exec_fp}" ]; then
-  print_err_msg_exit "\
-The executable (exec_fp) for running the forecast model does not exist:
-  exec_fp = \"${exec_fp}\"
-Please ensure that you've built this executable."
-fi
-#
-# Make a copy of the executable in the executables directory only if a
-# copy doens't already exist or if a copy does exist but is older than
-# the original.
-#
-if [ ! -e "${FV3_EXEC_FP}" ] || \
-   [ "${exec_fp}" -nt "${FV3_EXEC_FP}" ]; then
-  print_info_msg "$VERBOSE" "
-Copying the FV3-LAM executable (exec_fp) to the executables directory
-(EXECDIR):
-  exec_fp = \"${exec_fp}\"
-  EXECDIR = \"$EXECDIR\""
-  cp_vrfy "${exec_fp}" "${FV3_EXEC_FP}"
-fi
+print_info_msg "$VERBOSE" "
+Copying the field dictionary file from its location in the forecast
+model directory sturcture to the experiment directory..."
+cp_vrfy "${FIELD_DICT_IN_UWM_FP}" "${FIELD_DICT_FP}"
 #
 #-----------------------------------------------------------------------
 #
@@ -587,8 +658,8 @@ fi
 #
 #-----------------------------------------------------------------------
 #
-print_info_msg "$VERBOSE" "
-Setting parameters in FV3 namelist file (FV3_NML_FP):
+print_info_msg "
+Setting parameters in weather model's namelist file (FV3_NML_FP):
   FV3_NML_FP = \"${FV3_NML_FP}\""
 #
 # Set npx and npy, which are just NX plus 1 and NY plus 1, respectively.
@@ -599,30 +670,36 @@ Setting parameters in FV3 namelist file (FV3_NML_FP):
 npx=$((NX+1))
 npy=$((NY+1))
 #
-# For the physics suites that use RUC-LSM, set the parameter
-# lsoil according to the external models used to obtain ICs and LBCs.
+# For the physics suites that use RUC LSM, set the parameter kice to 9,
+# Otherwise, leave it unspecified (which means it gets set to the default
+# value in the forecast model).
 #
-if [ "${CCPP_PHYS_SUITE}" = "FV3_GSD_v0" ] || \
-   [ "${CCPP_PHYS_SUITE}" = "FV3_GSD_SAR" ]; then
-
-  if [ "${EXTRN_MDL_NAME_ICS}" = "NAM" ] || \
-     [ "${EXTRN_MDL_NAME_ICS}" = "GSMGFS" ] || \
-     [ "${EXTRN_MDL_NAME_ICS}" = "FV3GFS" ]; then
-    lsoil=4
-  elif [ "${EXTRN_MDL_NAME_ICS}" = "RAP" ] || \
-       [ "${EXTRN_MDL_NAME_ICS}" = "HRRR" ]; then
-    lsoil=9
-  else
-    print_err_msg_exit "\
-The value to set the variable lsoil to in the FV3 namelist file (FV3_NML_FP)
-has not been specified for the following combination of physics suite and
-external model for ICs:
-  CCPP_PHYS_SUITE = \"${CCPP_PHYS_SUITE}\"
-  EXTRN_MDL_NAME_ICS = \"${EXTRN_MDL_NAME_ICS}\"
-Please change one or more of these parameters or provide a value for lsoil
-(and change workflow generation script(s) accordingly) and rerun."
-  fi
-
+# NOTE:
+# May want to remove kice from FV3.input.yml (and maybe input.nml.FV3).
+#
+kice=""
+if [ "${SDF_USES_RUC_LSM}" = "TRUE" ]; then
+  kice="9"
+fi
+#
+# Set lsoil, which is the number of input soil levels provided in the 
+# chgres_cube output NetCDF file.  This is the same as the parameter 
+# nsoill_out in the namelist file for chgres_cube.  [On the other hand, 
+# the parameter lsoil_lsm (not set here but set in input.nml.FV3 and/or 
+# FV3.input.yml) is the number of soil levels that the LSM scheme in the
+# forecast model will run with.]  Here, we use the same approach to set
+# lsoil as the one used to set nsoill_out in exregional_make_ics.sh.  
+# See that script for details.
+#
+# NOTE:
+# May want to remove lsoil from FV3.input.yml (and maybe input.nml.FV3).
+# Also, may want to set lsm here as well depending on SDF_USES_RUC_LSM.
+#
+lsoil="4"
+if [ "${EXTRN_MDL_NAME_ICS}" = "HRRR" -o \
+     "${EXTRN_MDL_NAME_ICS}" = "RAP" ] && \
+   [ "${SDF_USES_RUC_LSM}" = "TRUE" ]; then
+  lsoil="9"
 fi
 #
 # Create a multiline variable that consists of a yaml-compliant string
@@ -630,6 +707,17 @@ fi
 # suite-independent need to be set to.  Below, this variable will be
 # passed to a python script that will in turn set the values of these
 # variables in the namelist file.
+#
+# IMPORTANT:
+# If we want a namelist variable to be removed from the namelist file,
+# in the "settings" variable below, we need to set its value to the
+# string "null".  This is equivalent to setting its value to 
+#    !!python/none
+# in the base namelist file specified by FV3_NML_BASE_SUITE_FP or the 
+# suite-specific yaml settings file specified by FV3_NML_YAML_CONFIG_FP.
+#
+# It turns out that setting the variable to an empty string also works
+# to remove it from the namelist!  Which is better to use??
 #
 settings="\
 'atmos_model_nml': {
@@ -655,6 +743,7 @@ settings="\
     'bc_update_interval': ${LBC_SPEC_INTVL_HRS},
   }
 'gfs_physics_nml': {
+    'kice': ${kice:-null},
     'lsoil': ${lsoil:-null},
     'do_shum': ${DO_SHUM},
     'do_sppt': ${DO_SPPT},
@@ -700,9 +789,9 @@ for (( i=0; i<${num_nml_vars}; i++ )); do
 
   mapping="${FV3_NML_VARNAME_TO_FIXam_FILES_MAPPING[$i]}"
   nml_var_name=$( printf "%s\n" "$mapping" | \
-                  sed -n -r -e "s/${regex_search}/\1/p" )
+                  $SED -n -r -e "s/${regex_search}/\1/p" )
   FIXam_fn=$( printf "%s\n" "$mapping" |
-              sed -n -r -e "s/${regex_search}/\2/p" )
+              $SED -n -r -e "s/${regex_search}/\2/p" )
 
   fp="\"\""
   if [ ! -z "${FIXam_fn}" ]; then
@@ -732,8 +821,8 @@ settings="$settings
   }"
 
 print_info_msg $VERBOSE "
-The variable \"settings\" specifying values of the namelist variables
-has been set as follows:
+The variable \"settings\" specifying values of the weather model's 
+namelist variables has been set as follows:
 
 settings =
 $settings"
@@ -787,16 +876,6 @@ if [ "${RUN_TASK_MAKE_GRID}" = "FALSE" ]; then
 Call to function to set surface climatology file names in the FV3 namelist
 file failed."
 
-  if [ "${DO_ENSEMBLE}" = TRUE ]; then
-    set_FV3nml_stoch_params || print_err_msg_exit "\
-Call to function to set stochastic parameters in the FV3 namelist files
-for the various ensemble members failed."
-  fi
-
-  create_diag_table_files || print_err_msg_exit "\
-Call to function to create a diagnostics table file under each cycle 
-directory failed."
-
 fi
 #
 #-----------------------------------------------------------------------
@@ -818,43 +897,41 @@ cp_vrfy $USHDIR/${EXPT_CONFIG_FN} $EXPTDIR
 #
 #-----------------------------------------------------------------------
 #
-wflow_db_fn="${WFLOW_XML_FN%.xml}.db"
-rocotorun_cmd="rocotorun -w ${WFLOW_XML_FN} -d ${wflow_db_fn} -v 10"
-rocotostat_cmd="rocotostat -w ${WFLOW_XML_FN} -d ${wflow_db_fn} -v 10"
+if [ "${WORKFLOW_MANAGER}" = "rocoto" ]; then
+  wflow_db_fn="${WFLOW_XML_FN%.xml}.db"
+  rocotorun_cmd="rocotorun -w ${WFLOW_XML_FN} -d ${wflow_db_fn} -v 10"
+  rocotostat_cmd="rocotostat -w ${WFLOW_XML_FN} -d ${wflow_db_fn} -v 10"
+fi
 
 print_info_msg "
 ========================================================================
 ========================================================================
 
-Workflow generation completed.
+Experiment generation completed.  The experiment directory is:
+
+  EXPTDIR=\"$EXPTDIR\"
 
 ========================================================================
 ========================================================================
-
-The experiment directory is:
-
-  > EXPTDIR=\"$EXPTDIR\"
-
 "
-case $MACHINE in
+#
+#-----------------------------------------------------------------------
+#
+# If rocoto is required, print instructions on how to load and use it
+#
+#-----------------------------------------------------------------------
+#
+if [ "${WORKFLOW_MANAGER}" = "rocoto" ]; then
 
-"CHEYENNE")
   print_info_msg "\
 To launch the workflow, first ensure that you have a compatible version
-of rocoto in your \$PATH. On Cheyenne, version 1.3.1 has been pre-built;
-you can load it in your \$PATH with one of the following commands, depending
-on your default shell:
+of rocoto available. For most pre-configured platforms, rocoto can be
+loaded via a module:
 
-bash:
-  > export PATH=\${PATH}:/glade/p/ral/jntp/tools/rocoto/rocoto-1.3.1/bin/
+  > module load rocoto
 
-tcsh:
-  > setenv PATH \${PATH}:/glade/p/ral/jntp/tools/rocoto/rocoto-1.3.1/bin/
-"
-  ;;
+For more details on rocoto, see the User's Guide.
 
-*)
-  print_info_msg "\
 To launch the workflow, first ensure that you have a compatible version
 of rocoto loaded.  For example, to load version 1.3.1 of rocoto, use
 
@@ -862,11 +939,7 @@ of rocoto loaded.  For example, to load version 1.3.1 of rocoto, use
 
 (This version has been tested on hera; later versions may also work but
 have not been tested.)
-"
-  ;;
 
-esac
-print_info_msg "
 To launch the workflow, change location to the experiment directory
 (EXPTDIR) and issue the rocotrun command, as follows:
 
@@ -893,9 +966,9 @@ following line can be added to the user's crontab (use \"crontab -e\" to
 edit the cron table):
 
 */3 * * * * cd $EXPTDIR && ./launch_FV3LAM_wflow.sh
-
-Done.
 "
+
+fi
 #
 # If necessary, run the NOMADS script to source external model data.
 #
@@ -916,6 +989,10 @@ fi
 { restore_shell_opts; } > /dev/null 2>&1
 
 }
+
+
+
+
 #
 #-----------------------------------------------------------------------
 #
@@ -935,7 +1012,12 @@ set -u
 #
 #-----------------------------------------------------------------------
 #
-scrfunc_fp=$( readlink -f "${BASH_SOURCE[0]}" )
+if [[ $(uname -s) == Darwin ]]; then
+  command -v greadlink >/dev/null 2>&1 || { echo >&2 "For Darwin-based operating systems (MacOS), the 'greadlink' utility is required to run the UFS SRW Application. Reference the User's Guide for more information about platform requirements. Aborting."; exit 1; }
+  scrfunc_fp=$( greadlink -f "${BASH_SOURCE[0]}" )
+else
+  scrfunc_fp=$( readlink -f "${BASH_SOURCE[0]}" )
+fi
 scrfunc_fn=$( basename "${scrfunc_fp}" )
 scrfunc_dir=$( dirname "${scrfunc_fp}" )
 #
@@ -996,7 +1078,7 @@ rm "${tmp_fp}"
 # ful, move the log file in which the "tee" command saved the output of
 # the function to the experiment directory.
 #
-if [ $retval -eq 0 ]; then
+if [[ $retval == 0 ]]; then
   mv "${log_fp}" "$exptdir"
 #
 # If the call to the generate_FV3LAM_wflow function above was not suc-

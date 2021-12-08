@@ -9,6 +9,7 @@
 #
 . ${GLOBAL_VAR_DEFNS_FP}
 . $USHDIR/source_util_funcs.sh
+. $USHDIR/set_FV3nml_stoch_params.sh
 #
 #-----------------------------------------------------------------------
 #
@@ -17,6 +18,7 @@
 #-----------------------------------------------------------------------
 #
 . $USHDIR/create_model_configure_file.sh
+. $USHDIR/create_diag_table_file.sh
 #
 #-----------------------------------------------------------------------
 #
@@ -35,7 +37,7 @@
 #
 #-----------------------------------------------------------------------
 #
-scrfunc_fp=$( readlink -f "${BASH_SOURCE[0]}" )
+scrfunc_fp=$( $READLINK -f "${BASH_SOURCE[0]}" )
 scrfunc_fn=$( basename "${scrfunc_fp}" )
 scrfunc_dir=$( dirname "${scrfunc_fp}" )
 #
@@ -83,16 +85,31 @@ print_input_args valid_args
 #
 #-----------------------------------------------------------------------
 #
+# Set OpenMP variables.
+#
+#-----------------------------------------------------------------------
+#
+export KMP_AFFINITY=${KMP_AFFINITY_RUN_FCST}
+export OMP_NUM_THREADS=${OMP_NUM_THREADS_RUN_FCST}
+export OMP_STACKSIZE=${OMP_STACKSIZE_RUN_FCST}
+#
+#-----------------------------------------------------------------------
+#
 # Load modules.
 #
 #-----------------------------------------------------------------------
 #
-case $MACHINE in
+case "$MACHINE" in
 
   "WCOSS_CRAY")
     ulimit -s unlimited
     ulimit -a
-    APRUN="aprun -b -j1 -n${PE_MEMBER01} -N24 -d1 -cc depth"
+
+    if [ ${PE_MEMBER01} -gt 24 ];then
+      APRUN="aprun -b -j1 -n${PE_MEMBER01} -N24 -d1 -cc depth"
+    else
+      APRUN="aprun -b -j1 -n24 -N24 -d1 -cc depth"
+    fi
     ;;
 
   "WCOSS_DELL_P3")
@@ -105,20 +122,18 @@ case $MACHINE in
     ulimit -s unlimited
     ulimit -a
     APRUN="srun"
-    OMP_NUM_THREADS=4
     ;;
 
   "ORION")
     ulimit -s unlimited
     ulimit -a
-    APRUN="srun"
+    APRUN="srun -n ${PE_MEMBER01}"
     ;;
 
   "JET")
     ulimit -s unlimited
     ulimit -a
     APRUN="srun"
-    OMP_NUM_THREADS=4
     ;;
 
   "ODIN")
@@ -139,11 +154,20 @@ case $MACHINE in
     APRUN="ibrun -np ${PE_MEMBER01}"
     ;;
 
+  "MACOS")
+    APRUN=$RUN_CMD_FCST
+    ;;
+
+  "LINUX")
+    ulimit -s unlimited
+    ulimit -a
+    APRUN=$RUN_CMD_FCST
+    ;;
+
   *)
     print_err_msg_exit "\
 Run command has not been specified for this machine:
-  MACHINE = \"$MACHINE\"
-  APRUN = \"$APRUN\""
+  MACHINE = \"$MACHINE\""
     ;;
 
 esac
@@ -173,22 +197,29 @@ the grid and (filtered) orography files ..."
 
 cd_vrfy ${run_dir}/INPUT
 
-relative_or_null=""
+#
+# For experiments in which the MAKE_GRID_TN task is run, we make the 
+# symlinks to the grid files relative because those files wlll be located 
+# within the experiment directory.  This keeps the experiment directory 
+# more portable and the symlinks more readable.  However, for experiments 
+# in which the MAKE_GRID_TN task is not run, pregenerated grid files will
+# be used, and those will be located in an arbitrary directory (specified 
+# by the user) that is somwehere outside the experiment directory.  Thus, 
+# in this case, there isn't really an advantage to using relative symlinks, 
+# so we use symlinks with absolute paths.
+#
 if [ "${RUN_TASK_MAKE_GRID}" = "TRUE" ]; then
-  relative_or_null="--relative"
+  relative_link_flag="TRUE"
+else
+  relative_link_flag="FALSE"
 fi
 
 # Symlink to mosaic file with a completely different name.
 #target="${FIXLAM}/${CRES}${DOT_OR_USCORE}mosaic.halo${NH4}.nc"   # Should this point to this halo4 file or a halo3 file???
 target="${FIXLAM}/${CRES}${DOT_OR_USCORE}mosaic.halo${NH3}.nc"   # Should this point to this halo4 file or a halo3 file???
 symlink="grid_spec.nc"
-if [ -f "${target}" ]; then
-  ln_vrfy -sf ${relative_or_null} $target $symlink
-else
-  print_err_msg_exit "\
-Cannot create symlink because target does not exist:
-  target = \"$target\""
-fi
+create_symlink_to_file target="$target" symlink="$symlink" \
+                       relative="${relative_link_flag}"
 
 ## Symlink to halo-3 grid file with "halo3" stripped from name.
 #target="${FIXLAM}/${CRES}${DOT_OR_USCORE}grid.tile${TILE_RGNL}.halo${NH3}.nc"
@@ -206,13 +237,8 @@ grid_fn=$( get_charvar_from_netcdf "${mosaic_fn}" "gridfiles" )
 
 target="${FIXLAM}/${grid_fn}"
 symlink="${grid_fn}"
-if [ -f "${target}" ]; then
-  ln_vrfy -sf ${relative_or_null} $target $symlink
-else
-  print_err_msg_exit "\
-Cannot create symlink because target does not exist:
-  target = \"$target\""
-fi
+create_symlink_to_file target="$target" symlink="$symlink" \
+                       relative="${relative_link_flag}"
 
 # Symlink to halo-4 grid file with "${CRES}_" stripped from name.
 #
@@ -228,31 +254,26 @@ fi
 #
 target="${FIXLAM}/${CRES}${DOT_OR_USCORE}grid.tile${TILE_RGNL}.halo${NH4}.nc"
 symlink="grid.tile${TILE_RGNL}.halo${NH4}.nc"
-if [ -f "${target}" ]; then
-  ln_vrfy -sf ${relative_or_null} $target $symlink
-else
-  print_err_msg_exit "\
-Cannot create symlink because target does not exist:
-  target = \"$target\""
-fi
+create_symlink_to_file target="$target" symlink="$symlink" \
+                       relative="${relative_link_flag}"
 
 
-
-relative_or_null=""
+#
+# As with the symlinks grid files above, when creating the symlinks to
+# the orography files, use relative paths if running the MAKE_OROG_TN
+# task and absolute paths otherwise.
+#
 if [ "${RUN_TASK_MAKE_OROG}" = "TRUE" ]; then
-  relative_or_null="--relative"
+  relative_link_flag="TRUE"
+else
+  relative_link_flag="FALSE"
 fi
 
 # Symlink to halo-0 orography file with "${CRES}_" and "halo0" stripped from name.
 target="${FIXLAM}/${CRES}${DOT_OR_USCORE}oro_data.tile${TILE_RGNL}.halo${NH0}.nc"
 symlink="oro_data.nc"
-if [ -f "${target}" ]; then
-  ln_vrfy -sf ${relative_or_null} $target $symlink
-else
-  print_err_msg_exit "\
-Cannot create symlink because target does not exist:
-  target = \"$target\""
-fi
+create_symlink_to_file target="$target" symlink="$symlink" \
+                       relative="${relative_link_flag}"
 #
 # Symlink to halo-4 orography file with "${CRES}_" stripped from name.
 #
@@ -268,14 +289,27 @@ fi
 #
 target="${FIXLAM}/${CRES}${DOT_OR_USCORE}oro_data.tile${TILE_RGNL}.halo${NH4}.nc"
 symlink="oro_data.tile${TILE_RGNL}.halo${NH4}.nc"
-if [ -f "${target}" ]; then
-  ln_vrfy -sf ${relative_or_null} $target $symlink
-else
-  print_err_msg_exit "\
-Cannot create symlink because target does not exist:
-  target = \"$target\""
-fi
+create_symlink_to_file target="$target" symlink="$symlink" \
+                       relative="${relative_link_flag}"
+#
+# If using the FV3_HRRR physics suite, there are two files (that contain 
+# statistics of the orography) that are needed by the gravity wave drag 
+# parameterization in that suite.  Below, create symlinks to these files
+# in the run directory.  Note that the symlinks must have specific names 
+# that the FV3 model is hardcoded to recognize, and those are the names 
+# we use below.
+#
+if [ "${CCPP_PHYS_SUITE}" = "FV3_HRRR" ]; then
 
+  fileids=( "ss" "ls" )
+  for fileid in "${fileids[@]}"; do
+    target="${FIXLAM}/${CRES}${DOT_OR_USCORE}oro_data_${fileid}.tile${TILE_RGNL}.halo${NH0}.nc"
+    symlink="oro_data_${fileid}.nc"
+    create_symlink_to_file target="$target" symlink="$symlink" \
+                           relative="${relative_link_flag}"
+  done
+
+fi
 
 #
 #-----------------------------------------------------------------------
@@ -301,30 +335,21 @@ of the current run directory (run_dir), where
 ..."
 
 cd_vrfy ${run_dir}/INPUT
-#ln_vrfy -sf gfs_data.tile${TILE_RGNL}.halo${NH0}.nc gfs_data.nc
-#ln_vrfy -sf sfc_data.tile${TILE_RGNL}.halo${NH0}.nc sfc_data.nc
-
-relative_or_null=""
+#
+# The symlinks to be created point to files in the same directory (INPUT),
+# so it's most straightforward to use relative paths.
+#
+relative_link_flag="TRUE"
 
 target="gfs_data.tile${TILE_RGNL}.halo${NH0}.nc"
 symlink="gfs_data.nc"
-if [ -f "${target}" ]; then
-  ln_vrfy -sf ${relative_or_null} $target $symlink
-else
-  print_err_msg_exit "\
-Cannot create symlink because target does not exist:
-  target = \"$target\""
-fi
+create_symlink_to_file target="$target" symlink="$symlink" \
+                       relative="${relative_link_flag}"
 
 target="sfc_data.tile${TILE_RGNL}.halo${NH0}.nc"
 symlink="sfc_data.nc"
-if [ -f "${target}" ]; then
-  ln_vrfy -sf ${relative_or_null} $target $symlink
-else
-  print_err_msg_exit "\
-Cannot create symlink because target does not exist:
-  target = \"$target\""
-fi
+create_symlink_to_file target="$target" symlink="$symlink" \
+                       relative="${relative_link_flag}"
 #
 #-----------------------------------------------------------------------
 #
@@ -343,10 +368,22 @@ Creating links in the current run directory (run_dir) to fixed (i.e.
 static) files in the FIXam directory:
   FIXam = \"${FIXam}\"
   run_dir = \"${run_dir}\""
-
-relative_or_null=""
+#
+# For experiments that are run in "community" mode, the FIXam directory
+# is an actual directory (i.e. not a symlink) located under the experiment 
+# directory containing actual files (i.e. not symlinks).  In this case,
+# we use relative paths for the symlinks in order to keep the experiment
+# directory more portable and the symlinks more readable.  However, for
+# experiments that are run in "nco" mode, the FIXam directory is a symlink
+# under the experiment directory that points to an arbitrary (user specified)
+# location outside the experiment directory.  Thus, in this case, there 
+# isn't really an advantage to using relative symlinks, so we use symlinks 
+# with absolute paths.
+#
 if [ "${RUN_ENVIR}" != "nco" ]; then
-  relative_or_null="--relative"
+  relative_link_flag="TRUE"
+else
+  relative_link_flag="FALSE"
 fi
 
 regex_search="^[ ]*([^| ]+)[ ]*[|][ ]*([^| ]+)[ ]*$"
@@ -355,19 +392,14 @@ for (( i=0; i<${num_symlinks}; i++ )); do
 
   mapping="${CYCLEDIR_LINKS_TO_FIXam_FILES_MAPPING[$i]}"
   symlink=$( printf "%s\n" "$mapping" | \
-             sed -n -r -e "s/${regex_search}/\1/p" )
+             $SED -n -r -e "s/${regex_search}/\1/p" )
   target=$( printf "%s\n" "$mapping" | \
-            sed -n -r -e "s/${regex_search}/\2/p" )
+            $SED -n -r -e "s/${regex_search}/\2/p" )
 
   symlink="${run_dir}/$symlink"
   target="$FIXam/$target"
-  if [ -f "${target}" ]; then
-    ln_vrfy -sf ${relative_or_null} $target $symlink
-  else
-    print_err_msg_exit "\
-  Cannot create symlink because target does not exist:
-    target = \"$target\""
-  fi
+  create_symlink_to_file target="$target" symlink="$symlink" \
+                         relative="${relative_link_flag}"
 
 done
 #
@@ -393,20 +425,69 @@ rm_vrfy -f time_stamp.out
 print_info_msg "$VERBOSE" "
 Creating links in the current run directory to cycle-independent model
 input files in the main experiment directory..."
-
-relative_or_null=""
+#
+# For experiments that are run in "community" mode, the model input files
+# to which the symlinks will point are under the experiment directory.
+# Thus, in this case, we use relative paths for the symlinks in order to 
+# keep the experiment directory more portable and the symlinks more readable.  
+# However, for experiments that are run in "nco" mode, the experiment
+# directory in which the model input files are located is in general 
+# completely different than the run directory in which the symlinks will
+# be created.  Thus, in this case, there isn't really an advantage to 
+# using relative symlinks, so we use symlinks with absolute paths.
+#
 if [ "${RUN_ENVIR}" != "nco" ]; then
-  relative_or_null="--relative"
+  relative_link_flag="TRUE"
+else
+  relative_link_flag="FALSE"
 fi
 
-ln_vrfy -sf ${relative_or_null} ${DATA_TABLE_FP} ${run_dir}
-ln_vrfy -sf ${relative_or_null} ${FIELD_TABLE_FP} ${run_dir}
-ln_vrfy -sf ${relative_or_null} ${NEMS_CONFIG_FP} ${run_dir}
+create_symlink_to_file target="${DATA_TABLE_FP}" \
+                       symlink="${run_dir}/${DATA_TABLE_FN}" \
+                       relative="${relative_link_flag}"
+
+create_symlink_to_file target="${FIELD_TABLE_FP}" \
+                       symlink="${run_dir}/${FIELD_TABLE_FN}" \
+                       relative="${relative_link_flag}"
+
+create_symlink_to_file target="${NEMS_CONFIG_FP}" \
+                       symlink="${run_dir}/${NEMS_CONFIG_FN}" \
+                       relative="${relative_link_flag}"
+
+create_symlink_to_file target="${FIELD_DICT_FP}" \
+                       symlink="${run_dir}/${FIELD_DICT_FN}" \
+                       relative="${relative_link_flag}"
+
+if [ ${WRITE_DOPOST} = "TRUE" ]; then
+  cp_vrfy ${UPP_DIR}/parm/nam_micro_lookup.dat ./eta_micro_lookup.dat
+  if [ ${USE_CUSTOM_POST_CONFIG_FILE} = "TRUE" ]; then
+    post_config_fp="${CUSTOM_POST_CONFIG_FP}"
+    print_info_msg "
+====================================================================
+  CUSTOM_POST_CONFIG_FP = \"${CUSTOM_POST_CONFIG_FP}\"
+===================================================================="
+  else
+    post_config_fp="${UPP_DIR}/parm/postxconfig-NT-fv3lam.txt"
+    print_info_msg "
+====================================================================
+  post_config_fp = \"${post_config_fp}\"
+===================================================================="
+  fi
+  cp_vrfy ${post_config_fp} ./postxconfig-NT_FH00.txt
+  cp_vrfy ${post_config_fp} ./postxconfig-NT.txt
+  cp_vrfy ${UPP_DIR}/parm/params_grib2_tbl_new .
+fi
 
 if [ "${DO_ENSEMBLE}" = TRUE ]; then
-  ln_vrfy -sf ${relative_or_null} "${FV3_NML_ENSMEM_FPS[$(( 10#${ensmem_indx}-1 ))]}" ${run_dir}/${FV3_NML_FN}
+  set_FV3nml_stoch_params cdate="$cdate" || print_err_msg_exit "\
+Call to function to create the ensemble-based namelist for the current
+cycle's (cdate) run directory (run_dir) failed:
+  cdate = \"${cdate}\"
+  run_dir = \"${run_dir}\""
 else
-  ln_vrfy -sf ${relative_or_null} ${FV3_NML_FP} ${run_dir}
+  create_symlink_to_file target="${FV3_NML_FP}" \
+                         symlink="${run_dir}/${FV3_NML_FN}" \
+                         relative="${relative_link_flag}"
 fi
 #
 #-----------------------------------------------------------------------
@@ -418,8 +499,10 @@ fi
 #
 create_model_configure_file \
   cdate="$cdate" \
-  nthreads=${OMP_NUM_THREADS:-1} \
-  run_dir="${run_dir}" || print_err_msg_exit "\
+  run_dir="${run_dir}" \
+  sub_hourly_post="${SUB_HOURLY_POST}" \
+  dt_subhourly_post_mnts="${DT_SUBHOURLY_POST_MNTS}" \
+  dt_atmos="${DT_ATMOS}" || print_err_msg_exit "\
 Call to function to create a model configuration file for the current
 cycle's (cdate) run directory (run_dir) failed:
   cdate = \"${cdate}\"
@@ -427,30 +510,16 @@ cycle's (cdate) run directory (run_dir) failed:
 #
 #-----------------------------------------------------------------------
 #
-# If running ensemble forecasts, create a link to the cycle-specific
-# diagnostic tables file in the cycle directory.  Note that this link
-# should not be made if not running ensemble forecasts because in that
-# case, the cycle directory is the run directory (and we would be creating
-# a symlink with the name of a file that already exists).
+# Call the function that creates the diag_table file within each cycle 
+# directory.
 #
 #-----------------------------------------------------------------------
 #
-if [ "${DO_ENSEMBLE}" = "TRUE" ]; then
-  relative_or_null="--relative"
-  diag_table_fp="${cycle_dir}/${DIAG_TABLE_FN}"
-  ln_vrfy -sf ${relative_or_null} ${diag_table_fp} ${run_dir}
-fi
-#
-#-----------------------------------------------------------------------
-#
-# Set and export variables.
-#
-#-----------------------------------------------------------------------
-#
-export KMP_AFFINITY=scatter
-export OMP_NUM_THREADS=${OMP_NUM_THREADS:-1} #Needs to be 1 for dynamic build of CCPP with GFDL fast physics, was 2 before.
-export OMP_STACKSIZE=1024m
-
+create_diag_table_file \
+  run_dir="${run_dir}" || print_err_msg_exit "\
+Call to function to create a diag table file for the current cycle's 
+(cdate) run directory (run_dir) failed:
+  run_dir = \"${run_dir}\""
 #
 #-----------------------------------------------------------------------
 #
@@ -465,6 +534,59 @@ export OMP_STACKSIZE=1024m
 $APRUN ${FV3_EXEC_FP} || print_err_msg_exit "\
 Call to executable to run FV3-LAM forecast returned with nonzero exit
 code."
+#
+#-----------------------------------------------------------------------
+#
+# If doing inline post, create the directory in which the post-processing 
+# output will be stored (postprd_dir).
+#
+#-----------------------------------------------------------------------
+#
+if [ ${WRITE_DOPOST} = "TRUE" ]; then
+
+  yyyymmdd=${cdate:0:8}
+  hh=${cdate:8:2}
+  cyc=$hh
+  tmmark="tm00"
+  fmn="00"
+
+  if [ "${RUN_ENVIR}" = "nco" ]; then
+    COMOUT="${COMOUT_BASEDIR}/$RUN.$PDY/$cyc${SLASH_ENSMEM_SUBDIR}"
+    postprd_dir="$COMOUT"
+  else
+    postprd_dir="${run_dir}/postprd"
+  fi
+  mkdir_vrfy -p "${postprd_dir}"
+
+  cd_vrfy ${postprd_dir}
+
+  for fhr in $(seq -f "%03g" 0 ${FCST_LEN_HRS}); do
+
+    if [ ${fhr:0:1} = "0" ]; then
+      fhr_d=${fhr:1:2}
+    else
+      fhr_d=${fhr}
+    fi
+
+    post_time=$( $DATE_UTIL --utc --date "${yyyymmdd} ${hh} UTC + ${fhr_d} hours + ${fmn} minutes" "+%Y%m%d%H%M" )
+    post_mn=${post_time:10:2}
+    post_mn_or_null=""
+    post_fn_suffix="GrbF${fhr_d}"
+    post_renamed_fn_suffix="f${fhr}${post_mn_or_null}.${tmmark}.grib2"
+
+    basetime=$( $DATE_UTIL --date "$yyyymmdd $hh" +%y%j%H%M )
+    symlink_suffix="_${basetime}f${fhr}${post_mn}"
+    fids=( "prslev" "natlev" )
+    for fid in "${fids[@]}"; do
+      FID=$(echo_uppercase $fid)
+      post_orig_fn="${FID}.${post_fn_suffix}"
+      post_renamed_fn="${NET}.t${cyc}z.${fid}${post_renamed_fn_suffix}"
+      mv_vrfy ${run_dir}/${post_orig_fn} ${post_renamed_fn}
+      ln_vrfy -fs ${post_renamed_fn} ${FID}${symlink_suffix}
+    done
+  done
+
+fi
 #
 #-----------------------------------------------------------------------
 #

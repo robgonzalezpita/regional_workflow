@@ -77,22 +77,33 @@ CDATE="2019070100"
 ;CDATE="2019070100"
 
 ;expt_dir = "/scratch2/BMC/det/Gerard.Ketefian/UFS_CAM/PR_feature_predef_grids/expt_dirs/try01/grid_CONUS_3km_GFDLgrid"
-;CDATE="2019070100"
+expt_dir = "/scratch2/BMC/det/Gerard.Ketefian/UFS_CAM/PR_feature_maximize_CONUS_grids/expt_dirs/try02/grid_RRFS_CONUS_3km_ics_FV3GFS_lbcs_FV3GFS_suite_GFS_v15p2"
+CDATE="2019070100"
 
 ;expt_dir = "/scratch2/BMC/det/Gerard.Ketefian/UFS_CAM/PR_feature_predef_grids/expt_dirs/try01/grid_CONUS_25km_GFDLgrid"
-expt_dir = "/scratch2/BMC/det/Gerard.Ketefian/UFS_CAM/PR_bugfix_adjust_CONUS_grids/expt_dirs/try03/grid_RRFS_CONUS_25km_ics_FV3GFS_lbcs_FV3GFS_suite_GFS_v15p2"
-CDATE="2019070100"
+;expt_dir = "/scratch2/BMC/det/Gerard.Ketefian/UFS_CAM/PR_bugfix_adjust_CONUS_grids/expt_dirs/try03/grid_RRFS_CONUS_25km_ics_FV3GFS_lbcs_FV3GFS_suite_GFS_v15p2"
+;expt_dir = "/work/noaa/gsd-fv3-dev/gsketefia/UFS/PR_release_branch/expt_dirs/try02/grid_RRFS_CONUS_25km_ics_FV3GFS_lbcs_FV3GFS_suite_GFS_v15p2"
+;expt_dir = "/scratch2/BMC/det/Gerard.Ketefian/UFS_CAM/PR_feature_maximize_CONUS_grids/expt_dirs/try02/grid_RRFS_CONUS_25km_ics_FV3GFS_lbcs_FV3GFS_suite_GFS_v15p2"
+;CDATE="2019070100"
 
 ;expt_dir = "/scratch2/BMC/det/Gerard.Ketefian/UFS_CAM/PR_feature_predef_grids/expt_dirs/try01/suite_FV3_GSD_SAR"
 ;CDATE="2019052000"
 
 ;expt_dir = "/scratch2/BMC/det/Gerard.Ketefian/UFS_CAM/PR_feature_predef_grids/expt_dirs/try01/grid_RRFS_AK_3km"
+;expt_dir = "/work/noaa/gsd-fv3-dev/gsketefia/UFS/PR_release_branch/expt_dirs/try01/grid_RRFS_CONUS_13km_ics_FV3GFS_lbcs_FV3GFS_suite_GFS_v15p2"
+;expt_dir = "/scratch2/BMC/det/Gerard.Ketefian/UFS_CAM/PR_feature_maximize_CONUS_grids/expt_dirs/try02/grid_RRFS_CONUS_13km_ics_FV3GFS_lbcs_FV3GFS_suite_GFS_v15p2"
 ;CDATE="2019052000"
 
 ;expt_dir = "/scratch2/BMC/det/Gerard.Ketefian/UFS_CAM/PR_feature_predef_grids/expt_dirs/try01/grid_RRFS_AK_13km"
 ;expt_dir = "/scratch2/BMC/det/Gerard.Ketefian/UFS_CAM/PR_feature_predef_grids/expt_dirs/try01/grid_RRFS_AK_13km_old001"
+;expt_dir = "/work/noaa/gsd-fv3-dev/gsketefia/UFS/PR_release_branch/expt_dirs/try02/grid_RRFS_CONUS_13km_ics_FV3GFS_lbcs_FV3GFS_suite_GFS_v15p2"
 ;CDATE="2019052000"
 
+;expt_dir = "/scratch2/BMC/det/Gerard.Ketefian/UFS_CAM/PR_Jeff_Duda_subhourly_post/expt_dirs/big_grid01/grid_GSD_RAP13km_pregen"
+;expt_dir = "/scratch2/BMC/det/Gerard.Ketefian/UFS_CAM/PR_Jeff_Duda_subhourly_post/expt_dirs/big_grid02/grid_GSD_RAP13km_pregen"
+;expt_dir = "/scratch2/BMC/det/Gerard.Ketefian/UFS_CAM/PR_Jeff_Duda_subhourly_post/expt_dirs/big_grid02/grid_GSD_RAP13km_pregen_old003"
+expt_dir = "/scratch2/BMC/det/Gerard.Ketefian/UFS_CAM/PR_Jeff_Duda_subhourly_post/expt_dirs/big_grid02/grid_GSD_RAP13km"
+CDATE="2019070100"
 
 run_dir = expt_dir + "/" + CDATE
 print("AAAAAA  run_dir = " + run_dir)
@@ -136,6 +147,7 @@ RAP_bdy_color = "red"
 
 RAP_dir = "/scratch3/BMC/fim/Gerard.Ketefian/regional_FV3_EMC_visit_20180509"
 RAP_dir = "/scratch1/BMC/gsd-fv3-dev/Gerard.Ketefian/regional_FV3_EMC_visit_20180509"
+;RAP_dir = "/work/noaa/gsd-fv3-dev/gsketefia/UFS" ; This is on Orion.
 ;RAP_grid_fn = "/home/Gerard/fv3_regional/fv3sar_workflow/ush/NCL/plot_grid.ncl"
 ;RAP_grid_fn = "/scratch3/BMC/fim/Gerard.Ketefian/regional_FV3_EMC_visit_20180509/geo_em.d01.RAP.nc"
 RAP_grid_fn = RAP_dir + "/geo_em.d01.RAP.nc"
@@ -149,6 +161,8 @@ map_proj = "cyln"
 ;
 map_proj_ctr = (/ 0.0, 0.0 /) ; This should be set to (0,0) for "cyln" map projection.
 ;map_proj_ctr = (/ -106.0, 54.0 /) ; RAP domain.
+;map_proj_ctr = (/ -106.0, 84.0 /) ; RAP domain.
+;map_proj_ctr = (/ 30.0, 60.0 /) ; RAP domain.
 ;map_proj_ctr = (/ -97.5, 38.5 /)  ; HRRR domain.
 ;map_proj_ctr = (/ 6.0, 54.0 /) ; RAP domain corner.
 
@@ -160,14 +174,33 @@ map_proj_ctr = (/ 0.0, 0.0 /) ; This should be set to (0,0) for "cyln" map proje
 plot_subreg = True
 ;plot_subreg = False
 
-;subreg_limits := (/ -180, 180, -90, 90 /)
+subreg_limits := (/ -180, 180, -90, 90 /)
 ;subreg_limits := (/ -75, -45, 30, 60 /)
+;subreg_limits := (/ -155, -45, 60, 90 /)
+;subreg_limits := (/ -155, -45, 60, 100 /)
+;subreg_limits := (/ -190, -170, 80, 100 /)
+;subreg_limits := (/ -55, -45, 80, 90 /)
+;subreg_limits := (/ 45, 55, 60, 70 /)
+;subreg_limits := (/ 15, 45, 30, 50 /)
 
 
+;subreg_limits := (/ -75, -45, -30, 0 /) ; 
+;subreg_limits := (/ -40, -35, 25, 30 /) ; 
+
+; The following are to plot regions near the four corners and along two
+; of the edges of GSD_RAP13km domain (soon to be renamed to RRFS_NA_13km)
+; to ensure that the write-component grid is within the native grid.  It's
+; easiest to use map_proj = "cyln" to plot these subregions.
+;subreg_limits := (/ -155, -130, -25, 0 /) ; 
+;subreg_limits := (/ -80, -55, -25, 0 /) ; 
+;subreg_limits := (/ -45, -20, 15, 40 /)
+;subreg_limits := (/ 5, 30, 35, 60 /)
+;subreg_limits := (/ 125, 150, 35, 60 /)
+;subreg_limits := (/ -180, -155, 15, 40 /)
 
 
-subreg_limits := (/ -128, -67, 23, 51 /) ; HRRR domain if using "cyln" map projection.
-subreg_limits := (/ -135, -60, 20, 55 /) ; HRRR domain if using "cyln" map projection.
+;subreg_limits := (/ -128, -67, 23, 51 /) ; HRRR domain if using "cyln" map projection.
+;subreg_limits := (/ -135, -60, 20, 55 /) ; HRRR domain if using "cyln" map projection.
 ;subreg_limits := (/ -125, -70, 20, 55 /) ; HRRR domain if using "ortho" map projection.
 ;subreg_limits := (/ -105, -95, 20, 30 /) ; Center of southern edge of HRRR domain.
 
@@ -217,21 +250,21 @@ subreg_limits := (/ -135, -60, 20, 55 /) ; HRRR domain if using "cyln" map proje
 ;subreg_limits := (/ -122.85, -122.83, 21.49, 21.51 /) ; 0.02deg x 0.02deg
 
 ; Zoom in on southeast corner of CONUS domain.
-;subreg_limits := (/ -68, -88, 22, 42 /) ; 20deg x 20deg
-;subreg_limits := (/ -70, -80, 20, 30 /) ; 10deg x 10deg
-;subreg_limits := (/ -71, -76, 21, 26 /) ; 5deg x 5deg
-;subreg_limits := (/ -71.9, -73.9, 21.4, 23.4 /) ; 2deg x 2deg
-;subreg_limits := (/ -72, -73, 21.2, 22.2 /) ; 1deg x 1deg
-;subreg_limits := (/ -72.0, -72.5, 21.45, 21.95 /) ; 0.5deg x 0.5deg
-;subreg_limits := (/ -72.1, -72.2, 21.45, 21.55 /) ; 0.1deg x 0.1deg
-;subreg_limits := (/ -72.15, -72.17, 21.49, 21.51 /) ; 0.02deg x 0.02deg
+;subreg_limits := (/ -88, -68, 18, 38 /) ; 20deg x 20deg
+;subreg_limits := (/ -80, -70, 20, 30 /) ; 10deg x 10deg
+;subreg_limits := (/ -76, -71, 21, 26 /) ; 5deg x 5deg
+;subreg_limits := (/ -73.9, -71.9, 21.0, 23.0 /) ; 2deg x 2deg
+;subreg_limits := (/ -73, -72, 21.2, 22.2 /) ; 1deg x 1deg
+;subreg_limits := (/ -72.5, -72.0, 21.45, 21.95 /) ; 0.5deg x 0.5deg
+;subreg_limits := (/ -72.25, -72.15, 21.45, 21.55 /) ; 0.1deg x 0.1deg
+;subreg_limits := (/ -72.17, -72.15, 21.49, 21.51 /) ; 0.02deg x 0.02deg
 
 ; Zoom in on northeast corner of CONUS domain.
-;subreg_limits := (/ -66, -86, 32, 52 /) ; 20deg x 20deg
-;subreg_limits := (/ -64, -74, 40, 50 /) ; 10deg x 10deg.
-;subreg_limits := (/ -62, -67, 44, 49 /) ; 5deg x 5deg.
-;subreg_limits := (/ -61.5, -63.5, 46.2, 48.2 /) ; 2deg x 2deg.
-;subreg_limits := (/ -61.2, -62.2, 47, 48 /) ; 1deg x 1deg.
+;subreg_limits := (/ -78, -58, 32, 52 /) ; 20deg x 20deg
+;subreg_limits := (/ -70, -60, 40, 50 /) ; 10deg x 10deg.
+;subreg_limits := (/ -65.5, -60.5, 44, 49 /) ; 5deg x 5deg.
+;subreg_limits := (/ -63.0, -61.0, 46.2, 48.2 /) ; 2deg x 2deg.
+;subreg_limits := (/ -62.2, -61.2, 47, 48 /) ; 1deg x 1deg.
 
 
 
@@ -652,7 +685,7 @@ wrtcmp@bdy_line_thickness = 6.0
 wrtcmp@bdy_dash_pattern = 1
 
 extrnl = True
-;extrnl = False
+extrnl = False
 ;extrnl@plot_gridlines = True
 extrnl@plot_gridlines = False
 ;extrnl@gridline_color = "red"

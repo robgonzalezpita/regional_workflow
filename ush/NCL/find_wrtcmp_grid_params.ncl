@@ -22,8 +22,16 @@ expt_dir = "/scratch2/BMC/det/Gerard.Ketefian/UFS_CAM/PR_feature_predef_grids/ex
 expt_dir = "/scratch2/BMC/det/Gerard.Ketefian/UFS_CAM/PR_bugfix_adjust_CONUS_grids/expt_dirs/try01/grid_RRFS_CONUS_13km_HRRRX_RAPX"
 expt_dir = "/scratch2/BMC/det/Gerard.Ketefian/UFS_CAM/PR_bugfix_adjust_CONUS_grids/expt_dirs/try01/grid_RRFS_CONUS_3km_FV3GFS_FV3GFS"
 expt_dir = "/scratch2/BMC/det/Gerard.Ketefian/UFS_CAM/PR_bugfix_adjust_CONUS_grids/expt_dirs/try03/grid_RRFS_CONUS_13km_ics_FV3GFS_lbcs_FV3GFS_suite_GFS_v15p2"
-expt_dir = "/scratch2/BMC/det/Gerard.Ketefian/UFS_CAM/PR_bugfix_adjust_CONUS_grids/expt_dirs/try03/grid_RRFS_CONUS_25km_ics_FV3GFS_lbcs_FV3GFS_suite_GFS_v15p2"
+expt_dir = "/scratch2/BMC/det/Gerard.Ketefian/UFS_CAM/PR_bugfix_adjust_CONUS_grids/expt_dirs/try03/grid_RRFS_CONUS_13km_ics_FV3GFS_lbcs_FV3GFS_suite_GFS_v15p2"
 
+expt_dir = "/scratch2/BMC/det/Gerard.Ketefian/UFS_CAM/PR_feature_maximize_CONUS_grids/expt_dirs/try01/grid_RRFS_CONUS_25km_ics_FV3GFS_lbcs_FV3GFS_suite_GFS_v15p2"
+
+;expt_dir = "/scratch2/BMC/det/Gerard.Ketefian/UFS_CAM/PR_feature_maximize_CONUS_grids/expt_dirs/try01/grid_RRFS_CONUS_13km_ics_FV3GFS_lbcs_FV3GFS_suite_GFS_v15p2"
+
+expt_dir = "/scratch2/BMC/det/Gerard.Ketefian/UFS_CAM/PR_feature_maximize_CONUS_grids/expt_dirs/try01/grid_RRFS_CONUS_3km_ics_FV3GFS_lbcs_FV3GFS_suite_GFS_v15p2"
+
+expt_dir = "/scratch2/BMC/det/Gerard.Ketefian/UFS_CAM/PR_Jeff_Duda_subhourly_post/expt_dirs/big_grid01/grid_GSD_RAP13km_pregen"
+expt_dir = "/scratch2/BMC/det/Gerard.Ketefian/UFS_CAM/PR_Jeff_Duda_subhourly_post/expt_dirs/big_grid01/grid_GSD_RAP13km_pregen_old003"
 
 ;
 ; **********************************************************************
@@ -100,7 +108,7 @@ begin
   var_defns_fp = expt_dir + "/var_defns.sh"
 
   param_names = (/ \
-"WRTCMP_PARAMS_TMPL_FP", \
+"MODEL_CONFIG_TMPL_FP", \
 "WRTCMP_output_grid", \
 "GTYPE", \
 "CRES", \
@@ -125,8 +133,8 @@ print("sed_output = " + sed_output)
 ; Convert the output from the sed command (which will be a string) to 
 ; the appropriate NCL data type.
 ;
-    if (strcmp_exact(param_name, "WRTCMP_PARAMS_TMPL_FP")) then
-      WRTCMP_PARAMS_TMPL_FP = tostring(sed_output)
+    if (strcmp_exact(param_name, "MODEL_CONFIG_TMPL_FP")) then
+      MODEL_CONFIG_TMPL_FP = tostring(sed_output)
     else if (strcmp_exact(param_name, "WRTCMP_output_grid")) then
       WRTCMP_output_grid = tostring(sed_output)
     else if (strcmp_exact(param_name, "GTYPE")) then
@@ -197,7 +205,8 @@ print("AAAAAAAAAAAAAAAAAAAAAAAAAAA")
 ;
 print("BBBBBBBBBBBBBBBBBBBBBBBBBBB")
   remove_rgnl_halo = True
-  get_tile_bdies = False
+;  get_tile_bdies = False
+  get_tile_bdies = True
 
   grid_info := read_FV3LAM_grid_native( \
                expt_dir, \
@@ -216,6 +225,18 @@ print("BBBBBBBBBBBBBBBBBBBBBBBBBBB")
   lat_tile_corners_face_midpts_tiles_to_plot \
   = grid_info@lat_tile_corners_face_midpts_all_tiles
 
+  lon_bdy_tiles_to_plot = grid_info@lon_bdy_all_tiles
+  lat_bdy_tiles_to_plot = grid_info@lat_bdy_all_tiles
+
+  nx_all_tiles := grid_info@nx_all_tiles
+  ny_all_tiles := grid_info@ny_all_tiles
+
+;print("LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL")
+;print("dimsizes(lon_tile_corners_face_midpts_tiles_to_plot) = " + dimsizes(lon_tile_corners_face_midpts_tiles_to_plot))
+;print("dimsizes(lon_bdy_tiles_to_plot) = " + dimsizes(lon_bdy_tiles_to_plot))
+;print("dimsizes(nx_all_tiles) = " + dimsizes(nx_all_tiles))
+;pause
+
 ;lon_tile_corners_face_midpts_tiles_to_plot \
 ;= where(lon_tile_corners_face_midpts_tiles_to_plot .gt. 0.0d+0, \
 ;  lon_tile_corners_face_midpts_tiles_to_plot - 360.0d+0, \
@@ -223,18 +244,6 @@ print("BBBBBBBBBBBBBBBBBBBBBBBBBBB")
 ;print("lon_tile_corners_face_midpts_tiles_to_plot, lat_tile_corners_face_midpts_tiles_to_plot = " + \
 ;      lon_tile_corners_face_midpts_tiles_to_plot + ", " + lat_tile_corners_face_midpts_tiles_to_plot)
 ;pause
-;
-; **********************************************************************
-;
-; Set the full path to the file that will contain a copy of the write-
-; component template file with placeholders replaced with actual values.  
-; Then copy the template file to that file.
-;
-; **********************************************************************
-;
-  wrtcmp_config_fp = expt_dir + "/aaaa"
-  sys_output = systemfunc("cp " + WRTCMP_PARAMS_TMPL_FP + \
-                          " " + wrtcmp_config_fp) 
 ;
 ; **********************************************************************
 ;
@@ -256,6 +265,19 @@ print("BBBBBBBBBBBBBBBBBBBBBBBBBBB")
   lat_tile_corners_face_midpts_native \
   := lat_tile_corners_face_midpts_tiles_to_plot(nn,:)
 
+  nx_native := nx_all_tiles(nn)
+  ny_native := ny_all_tiles(nn)
+;print("nx_native = " + nx_native)
+;print("ny_native = " + ny_native)
+;pause
+
+  indx_start := 0
+  indx_end := 2*(nx_native + ny_native)
+  lon_bdy_native := lon_bdy_tiles_to_plot(indx_start:indx_end)
+  lat_bdy_native := lat_bdy_tiles_to_plot(indx_start:indx_end)
+;print("dimsizes(lon_bdy_native) = " + dimsizes(lon_bdy_native))
+;pause
+
   angle_units = "deg"
 
   valid_vals_WRTCMP_output_grid \
@@ -267,17 +289,20 @@ print("BBBBBBBBBBBBBBBBBBBBBBBBBBB")
     if (strcmp_exact(WRTCMP_output_grid, "rotated_latlon")) then
 
       out := calc_wrtcmp_grid_params_rotated_latlon( \
-             wrtcmp_config_fp, \
+             MODEL_CONFIG_TMPL_FP, \
              lon_grid_cntr_native, lat_grid_cntr_native, \
              lon_tile_corners_face_midpts_native, \
              lat_tile_corners_face_midpts_native, \
+             lon_bdy_native, \
+             lat_bdy_native, \
+             nx_native, ny_native, \
              dx_native, dy_native, \
              angle_units)
 
     else if (strcmp_exact(WRTCMP_output_grid, "lambert_conformal")) then
 
       out := calc_wrtcmp_grid_params_lambert_cnfrml( \
-             wrtcmp_config_fp, \
+             MODEL_CONFIG_TMPL_FP, \
              lon_grid_cntr_native, lat_grid_cntr_native, \
              lon_tile_corners_face_midpts_native, \
              lat_tile_corners_face_midpts_native, \
