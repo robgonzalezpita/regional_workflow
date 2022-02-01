@@ -152,13 +152,14 @@ QUEUE_FCST=""
 # will be ignored unless WORKFLOW_MANAGER="none".  Definitions:
 #
 # RUN_CMD_UTILS:
-# The run command for pre-processing utilities (shave, orog, sfc_climo_gen, etc.)
-# Can be left blank for smaller domains, in which case the executables will run
-# without MPI.
+# The run command for pre-processing utilities (shave, orog, sfc_climo_gen, 
+# etc.) Can be left blank for smaller domains, in which case the executables 
+# will run without MPI.
 #
 # RUN_CMD_FCST:
-# The run command for the model forecast step. This will be appended to the end
-# of the variable definitions file, so it can reference other variables.
+# The run command for the model forecast step. This will be appended to 
+# the end of the variable definitions file, so it can reference other 
+# variables.
 #
 # RUN_CMD_POST:
 # The run command for post-processing (UPP). Can be left blank for smaller 
@@ -167,7 +168,7 @@ QUEUE_FCST=""
 #-----------------------------------------------------------------------
 #
 RUN_CMD_UTILS="mpirun -np 1"
-RUN_CMD_FCST="mpirun -np \${PE_MEMBER01}"
+RUN_CMD_FCST='mpirun -np \${PE_MEMBER01}'
 RUN_CMD_POST="mpirun -np 1"
 #
 #-----------------------------------------------------------------------
@@ -295,7 +296,7 @@ PTMP="/base/path/of/directory/containing/postprocessed/output/files"
 #
 #-----------------------------------------------------------------------
 #
-# Set the sparator character(s) to use in the names of the grid, mosaic,
+# Set the separator character(s) to use in the names of the grid, mosaic,
 # and orography fixed files.
 #
 # Ideally, the same separator should be used in the names of these fixed
@@ -436,6 +437,10 @@ WFLOW_LAUNCH_LOG_FN="log.launch_FV3LAM_wflow"
 # two-digit string representing an integer that is less than or equal to
 # 23, e.g. "00", "03", "12", "23".
 #
+# INCR_CYCL_FREQ:
+# Increment in hours for Cycle Frequency (cycl_freq).
+# Default is 24, which means cycle_freq=24:00:00
+#
 # FCST_LEN_HRS:
 # The length of each forecast, in integer hours.
 #
@@ -444,6 +449,7 @@ WFLOW_LAUNCH_LOG_FN="log.launch_FV3LAM_wflow"
 DATE_FIRST_CYCL="YYYYMMDD"
 DATE_LAST_CYCL="YYYYMMDD"
 CYCL_HRS=( "HH1" "HH2" )
+INCR_CYCL_FREQ="24"
 FCST_LEN_HRS="24"
 #
 #-----------------------------------------------------------------------
@@ -599,6 +605,24 @@ NDAS_OBS_DIR="/path/to/observation-directory/ndas/proc"
 # data availble at least every 6 hours.  It is up to the user to ensure 
 # that this is the case.
 #
+# EXTRN_MDL_ICS_OFFSET_HRS:
+# Users may wish to start a forecast from a forecast of a previous cycle
+# of an external model. This variable sets the number of hours earlier
+# the external model started than when the FV3 forecast configured here
+# should start. For example, the forecast should start from a 6 hour
+# forecast of the GFS, then EXTRN_MDL_ICS_OFFSET_HRS=6.
+
+# EXTRN_MDL_LBCS_OFFSET_HRS:
+# Users may wish to use lateral boundary conditions from a forecast that
+# was started earlier than the initial time for the FV3 forecast
+# configured here. This variable sets the number of hours earlier
+# the external model started than when the FV3 forecast configured here
+# should start. For example, the forecast should use lateral boundary
+# conditions from the GFS started 6 hours earlier, then
+# EXTRN_MDL_LBCS_OFFSET_HRS=6.
+# Note: the default value is model-dependent and set in
+# set_extrn_mdl_params.sh
+#
 # FV3GFS_FILE_FMT_ICS:
 # If using the FV3GFS model as the source of the ICs (i.e. if EXTRN_MDL_NAME_ICS
 # is set to "FV3GFS"), this variable specifies the format of the model
@@ -614,6 +638,8 @@ NDAS_OBS_DIR="/path/to/observation-directory/ndas/proc"
 EXTRN_MDL_NAME_ICS="FV3GFS"
 EXTRN_MDL_NAME_LBCS="FV3GFS"
 LBC_SPEC_INTVL_HRS="6"
+EXTRN_MDL_ICS_OFFSET_HRS="0"
+EXTRN_MDL_LBCS_OFFSET_HRS=""
 FV3GFS_FILE_FMT_ICS="nemsio"
 FV3GFS_FILE_FMT_LBCS="nemsio"
 #
@@ -707,6 +733,7 @@ NOMADS_file_type="nemsio"
 # directory or the cycle directories under it.
 #
 #-----------------------------------------------------------------------
+#
 CCPP_PHYS_SUITE="FV3_GFS_v15p2"
 #
 #-----------------------------------------------------------------------
@@ -1171,13 +1198,21 @@ PREEXISTING_DIR_METHOD="delete"
 #
 #-----------------------------------------------------------------------
 #
-# Set VERBOSE.  This is a flag that determines whether or not the experiment
-# generation and workflow task scripts tend to print out more informational
-# messages.
+# Set flags for more detailed messages.  Defintitions:
+#
+# VERBOSE:
+# This is a flag that determines whether or not the experiment generation 
+# and workflow task scripts tend to print out more informational messages.
+#
+# DEBUG:
+# This is a flag that determines whether or not very detailed debugging
+# messages are printed to out.  Note that if DEBUG is set to TRUE, then
+# VERBOSE will also get reset to TRUE if it isn't already.
 #
 #-----------------------------------------------------------------------
 #
 VERBOSE="TRUE"
+DEBUG="FALSE"
 #
 #-----------------------------------------------------------------------
 #
@@ -1257,6 +1292,21 @@ VX_ENSPOINT_PROB_TN="run_enspointvx_prob"
 # SFC_CLIMO_DIR:
 # Same as GRID_DIR but for the MAKE_SFC_CLIMO_TN task.
 #
+# RUN_TASK_GET_EXTRN_ICS:
+# Flag that determines whether the GET_EXTRN_ICS_TN task is to be run.
+#
+# RUN_TASK_GET_EXTRN_LBCS:
+# Flag that determines whether the GET_EXTRN_LBCS_TN task is to be run.
+#
+# RUN_TASK_MAKE_ICS:
+# Flag that determines whether the MAKE_ICS_TN task is to be run.
+#
+# RUN_TASK_MAKE_LBCS:
+# Flag that determines whether the MAKE_LBCS_TN task is to be run.
+#
+# RUN_TASK_RUN_FCST:
+# Flag that determines whether the RUN_FCST_TN task is to be run.
+#
 # RUN_TASK_RUN_POST:
 # Flag that determines whether the RUN_POST_TN task is to be run.
 # 
@@ -1288,21 +1338,29 @@ OROG_DIR="/path/to/pregenerated/orog/files"
 RUN_TASK_MAKE_SFC_CLIMO="TRUE"
 SFC_CLIMO_DIR="/path/to/pregenerated/surface/climo/files"
 
+RUN_TASK_GET_EXTRN_ICS="TRUE"
+RUN_TASK_GET_EXTRN_LBCS="TRUE"
+RUN_TASK_MAKE_ICS="TRUE"
+RUN_TASK_MAKE_LBCS="TRUE"
+RUN_TASK_RUN_FCST="TRUE"
 RUN_TASK_RUN_POST="TRUE"
 
 RUN_TASK_GET_OBS_CCPA="FALSE"
-
 RUN_TASK_GET_OBS_MRMS="FALSE"
-
 RUN_TASK_GET_OBS_NDAS="FALSE"
-
 RUN_TASK_VX_GRIDSTAT="FALSE"
-
 RUN_TASK_VX_POINTSTAT="FALSE"
-
 RUN_TASK_VX_ENSGRID="FALSE"
-
 RUN_TASK_VX_ENSPOINT="FALSE"
+#
+#-----------------------------------------------------------------------
+#
+# Flag that determines whether MERRA2 aerosol climatology data and
+# lookup tables for optics properties are obtained
+#
+#-----------------------------------------------------------------------
+#
+USE_MERRA_CLIMO="FALSE"
 #
 #-----------------------------------------------------------------------
 #
@@ -1329,6 +1387,12 @@ SFC_CLIMO_FIELDS=( \
 # FIXgsm:
 # System directory in which the majority of fixed (i.e. time-independent) 
 # files that are needed to run the FV3-LAM model are located
+#
+# FIXaer:
+# System directory where MERRA2 aerosol climatology files are located
+#
+# FIXlut:
+# System directory where the lookup tables for optics properties are located
 #
 # TOPO_DIR:
 # The location on disk of the static input files used by the make_orog
@@ -1389,6 +1453,8 @@ SFC_CLIMO_FIELDS=( \
 # to a null string which will then be overwritten in setup.sh unless the
 # user has specified a different value in config.sh
 FIXgsm=""
+FIXaer=""
+FIXlut=""
 TOPO_DIR=""
 SFC_CLIMO_INPUT_DIR=""
 
@@ -1690,9 +1756,9 @@ NUM_ENS_MEMBERS="1"
 #
 #-----------------------------------------------------------------------
 #
-DO_SHUM="false"
-DO_SPPT="false"
-DO_SKEB="false"
+DO_SHUM="FALSE"
+DO_SPPT="FALSE"
+DO_SKEB="FALSE"
 SHUM_MAG="0.006" #Variable "shum" in input.nml
 SHUM_LSCALE="150000"
 SHUM_TSCALE="21600" #Variable "shum_tau" in input.nml
@@ -1706,7 +1772,7 @@ SKEB_LSCALE="150000"
 SKEB_TSCALE="21600" #Variable "skeb_tau" in input.nml
 SKEB_INT="3600" #Variable "skebint" in input.nml
 SKEB_VDOF="10"
-USE_ZMTNBLCK="false"
+USE_ZMTNBLCK="FALSE"
 #
 #-----------------------------------------------------------------------
 #
@@ -1723,7 +1789,7 @@ USE_ZMTNBLCK="false"
 #
 #-----------------------------------------------------------------------
 #
-DO_SPP="false"
+DO_SPP="FALSE"
 SPP_VAR_LIST=( "pbl" )
 SPP_MAG_LIST=( "0.2" ) #Variable "spp_prt_list" in input.nml
 SPP_LSCALE=( "150000.0" )
@@ -1838,6 +1904,3 @@ OMP_STACKSIZE_RUN_FCST="1024m"
 KMP_AFFINITY_RUN_POST="scatter"
 OMP_NUM_THREADS_RUN_POST="1"
 OMP_STACKSIZE_RUN_POST="1024m"
-#
-#-----------------------------------------------------------------------
-#

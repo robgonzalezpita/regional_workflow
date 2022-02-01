@@ -538,8 +538,8 @@ accordingly and rerun."
   if [ "${match_found}" = "FALSE" ]; then
     avail_WE2E_test_names_str=$( printf "  \"%s\"\n" "${avail_WE2E_test_names[@]}" )
     print_err_msg_exit "\
-The name current user-specified test to run (user_spec_test) does not 
-match any of the names (either primary or alternate) of the available
+The name of the current user-specified test to run (user_spec_test) does 
+not match any of the names (either primary or alternate) of the available
 WE2E tests:
   user_spec_test = \"${user_spec_test}\"
 Valid values for user_spec_test consist of the names (primary or alternate)
@@ -938,7 +938,7 @@ PTMP=\"${PTMP}\""
     elif [ "$MACHINE" = "HERA" ]; then
       extrn_mdl_source_basedir="/scratch2/BMC/det/Gerard.Ketefian/UFS_CAM/staged_extrn_mdl_files"
     elif [ "$MACHINE" = "JET" ]; then
-      extrn_mdl_source_basedir="/mnt/lfs1/BMC/fim/Gerard.Ketefian/UFS_CAM/staged_extrn_mdl_files"
+      extrn_mdl_source_basedir="/mnt/lfs1/BMC/gsd-fv3/Gerard.Ketefian/UFS_CAM/staged_extrn_mdl_files"
     elif [ "$MACHINE" = "CHEYENNE" ]; then
       extrn_mdl_source_basedir="/glade/p/ral/jntp/UFS_SRW_app/staged_extrn_mdl_files"
     elif [ "$MACHINE" = "ORION" ]; then
