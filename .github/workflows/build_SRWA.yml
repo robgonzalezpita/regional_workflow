@@ -1,0 +1,89 @@
+# This workflow Builds the UFS SRWEATHER APP
+name: Build SRWA
+
+on:
+  push:
+    branches: [ feature/CI_build_test ]
+  pull_request:
+    branches: [ rrfs_ci, feature/CI_build_test ]
+
+# Use a default login shell which loads intel/oneapi/setvars.sh, and lmod path 
+defaults:
+  run:
+    shell: bash -l {0}
+
+jobs:
+ 
+  Clone_rrfs_ci_pcluster:
+    # Auxillary repository needed to insert env files to run CI tests in the short term 
+    name: Clone RRFS CI repo
+    # This job will run on AWS Parallel Cluster head node
+    runs-on: self-hosted
+    steps:
+    
+    - name: Checkout robgonzalezpita/rrfs-ci-pcluster Repo
+      uses: actions/checkout@v3
+      with:
+        repository: robgonzalezpita/rrfs-ci-pcluster
+        path: ./rrfs-ci-pcluster
+  
+  Configure_SRWA:
+    name: Checkout SRWA in parent directory 
+    runs-on: self-hosted 
+    needs: [ Clone_rrfs_ci_pcluster ]
+
+    steps:
+      # Checkout the SRWA - in parent directory, with commit sha-1 in filepath to avoid multiple PR Conflicts, & track builds by commit
+      # Specify branch used for testing, if there is not a similar named branch in ufs-SRWA
+      - name: Checkout SRWA 
+        run: |
+          cd ../
+          mkdir ${{ github.sha }} && cd ${{ github.sha }} 
+          git clone https://github.com/NOAA-GSL/ufs-srweather-app.git
+          cd ufs-srweather-app
+          exists=`git show-ref ${{ github.ref }}`
+          if [ -n "$exists" ]; then
+            echo 'branch exists!'
+            git checkout ${{ github.ref_name }}
+          else
+            git checkout rrfs_ci
+          fi
+          git branch
+
+      # This step is needed until NOAA-GSL rrfs_ci branch is updated in ufs-srwa repository
+      - name: Update scripts
+        run: |
+          cd ../${{ github.sha }}/ufs-srweather-app/test/
+          sed -i 's/\bwcoss_dell_p3\b/& aws/' build.sh
+          cd ../env/
+          sed -i "99i  \  `hostname -f`)     MACHINE_ID=aws ;;   ### pcluster" detect_machine.sh
+          cp ../../../regional_workflow/rrfs-ci-pcluster/build_linux_intel.env build_aws_intel.env
+          cp ../../../regional_workflow/rrfs-ci-pcluster/wflow_linux.env wflow_aws.env 
+      
+      - name: Checkout Externals & Delete Regional Workflow
+        run: |
+          cd ../${{ github.sha }}/ufs-srweather-app
+          ./manage_externals/checkout_externals
+          rm -rf regional_workflow
+         
+      - name: Checkout this version of Regional Workflow
+        uses: actions/checkout@v3
+        with:
+          clean: false
+       
+      - name: Insert this Version of Regional Workflow
+        run: |
+          cp -r ${{ github.workspace }} ../${{ github.sha }}/ufs-srweather-app/regional_workflow
+  
+  Build_SRWA:
+    name: Build SRWA 
+    runs-on: self-hosted
+    needs: [ Clone_rrfs_ci_pcluster, Configure_SRWA ]
+    
+    steps:
+      - name: Build Short Range Weather App using test/build.sh
+        run: |
+          cd ../${{ github.sha }}/ufs-srweather-app/test/
+          ./build.sh >& build_test.out
+          cat build_test*
+
