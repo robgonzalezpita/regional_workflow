@@ -40,7 +40,7 @@ Examples
 
   To produce a namelist (fv3_expt.nml) by specifying a physics package:
 
-    set_namelist.py -n templates/input.nml.FV3 -c templates/FV3.input.yml FV3_GSD_SAR
+    set_namelist.py -n templates/input.nml.FV3 -c templates/FV3.input.yml FV3_HRRR
         -o fv3_expt.nml
 
   To produce a YAML file (fv3_namelist.yml) from a user namelist:
@@ -69,6 +69,7 @@ Expected behavior:
 import argparse
 import collections
 import os
+import sys
 
 import f90nml
 import yaml
@@ -137,7 +138,7 @@ def path_ok(arg):
     msg = f'{arg} is not a writable path!'
     raise argparse.ArgumentTypeError(msg)
 
-def parse_args():
+def parse_args(argv):
 
     '''
     Function maintains the arguments accepted by this script. Please see
@@ -171,7 +172,7 @@ def parse_args():
                         )
     parser.add_argument('-n', '--basenml',
                         dest='nml',
-                        help='Full path the input Fortran namelist. Optional.',
+                        help='Full path to the input Fortran namelist. Optional.',
                         type=file_exists,
                         )
     parser.add_argument('-t', '--type',
@@ -192,7 +193,7 @@ def parse_args():
                         action='store_true',
                         help='If provided, suppress all output.',
                         )
-    return parser.parse_args()
+    return parser.parse_args(argv)
 
 def dict_diff(dict1, dict2):
 
@@ -284,9 +285,14 @@ def update_dict(dest, newdict, quiet=False):
                         dest[sect] = {}
                         dest[sect][key] = value
 
-def main(cla):
+def set_namelist(argv):
 
     ''' Using input command line arguments (cla), update a Fortran namelist file. '''
+
+    # parse argumetns
+    cla = parse_args(argv)
+    if cla.config:
+        cla.config, _ = config_exists(cla.config)
 
     # Load base namelist into dict
     nml = f90nml.Namelist()
@@ -324,7 +330,4 @@ def main(cla):
 
 
 if __name__ == '__main__':
-    cla = parse_args()
-    if cla.config:
-        cla.config, _ = config_exists(cla.config)
-    main(cla)
+    set_namelist(sys.argv[1:])

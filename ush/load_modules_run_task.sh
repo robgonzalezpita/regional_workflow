@@ -3,12 +3,14 @@
 #
 #-----------------------------------------------------------------------
 #
-# Source the variable definitions file and the bash utility functions.
+# Source necessary files.
 #
 #-----------------------------------------------------------------------
 #
 . ${GLOBAL_VAR_DEFNS_FP}
+. $USHDIR/source_machine_file.sh
 . $USHDIR/source_util_funcs.sh
+. $USHDIR/init_env.sh
 #
 #-----------------------------------------------------------------------
 #
@@ -65,56 +67,13 @@ fi
 #
 #-----------------------------------------------------------------------
 #
-# Source the script that initializes the Lmod (Lua-based module) system/
-# software for handling modules.  This script defines the module() and
-# other functions.  These are needed so we can perform the "module use
-# ..." and "module load ..." calls later below that are used to load the
-# appropriate module file for the specified task.
+# Initialize the environment, e.g. by making available the "module" 
+# command as well as others.
 #
 #-----------------------------------------------------------------------
 #
-print_info_msg "$VERBOSE" "
-Initializing the shell function \"module()\" (and others) in order to be
-able to use \"module load ...\" to load necessary modules ..."
-
-case "$MACHINE" in
-#
-  "WCOSS_CRAY")
-    . /opt/modules/default/init/sh
-    ;;
-#
-  "WCOSS_DELL_P3")
-    . /usrx/local/prod/lmod/lmod/init/sh
-    ;;
-#
-  "HERA")
-    . /apps/lmod/lmod/init/sh
-    ;;
-#
-  "ORION")
-    . /apps/lmod/lmod/init/sh
-    ;;
-#
-  "JET")
-    . /apps/lmod/lmod/init/sh
-    ;;
-#
-  "CHEYENNE")
-    . /glade/u/apps/ch/opt/lmod/8.1.7/lmod/8.1.7/init/sh
-    ;;
-#
-  *)
-    if [[ -n ${LMOD_PATH:-""} && -f ${LMOD_PATH:-""} ]] ; then
-      . ${LMOD_PATH}
-    else
-      print_err_msg_exit "\
-      The script to source to initialize lmod (module loads) has not yet been
-      specified for the current machine (MACHINE):
-        MACHINE = \"$MACHINE\""
-    fi
-    ;;
-#
-esac
+env_init_scripts_fps_str="( "$(printf "\"%s\" " "${ENV_INIT_SCRIPTS_FPS[@]}")")"
+init_env env_init_scripts_fps="${env_init_scripts_fps_str}"
 #
 #-----------------------------------------------------------------------
 #
@@ -127,19 +86,19 @@ jjob_fp="$2"
 #
 #-----------------------------------------------------------------------
 #
-# Sourcing ufs-srweather-app build env file
+# Loading ufs-srweather-app build module files
 #
 #-----------------------------------------------------------------------
 #
-
 machine=$(echo_lowercase $MACHINE)
-env_fp="${SR_WX_APP_TOP_DIR}/env/${BUILD_ENV_FN}"
-module use "${SR_WX_APP_TOP_DIR}/env"
-source "${env_fp}" || print_err_msg_exit "\
-Sourcing platform- and compiler-specific environment file (env_fp) for the 
+
+source "${SR_WX_APP_TOP_DIR}/etc/lmod-setup.sh"
+module use "${SR_WX_APP_TOP_DIR}/modulefiles"
+module load "${BUILD_MOD_FN}" || print_err_msg_exit "\
+Sourcing platform- and compiler-specific module file (BUILD_MOD_FN) for the 
 workflow task specified by task_name failed:
   task_name = \"${task_name}\"
-  env_fp = \"${env_fp}\""
+  BUILD_MOD_FN = \"${BUILD_MOD_FN}\""
 #
 #-----------------------------------------------------------------------
 #
@@ -154,7 +113,7 @@ workflow task specified by task_name failed:
 #
 # The regional_workflow repository contains module files for the
 # workflow tasks in the template rocoto XML file for the FV3-LAM work-
-# flow that need modules not loaded in the env_fn above.
+# flow that need modules not loaded in the BUILD_MOD_FN above.
 #
 # The full path to a module file for a given task is
 #

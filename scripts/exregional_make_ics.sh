@@ -86,27 +86,12 @@ export OMP_STACKSIZE=${OMP_STACKSIZE_MAKE_ICS}
 #
 #-----------------------------------------------------------------------
 #
-case "$MACHINE" in
-
-  "WCOSS_CRAY")
-    ulimit -s unlimited
-    RUN_CMD_UTILS="aprun -b -j1 -n48 -N12 -d1 -cc depth"
-    ;;
-
-  "WCOSS_DELL_P3")
-    ulimit -s unlimited
-    RUN_CMD_UTILS="mpirun"
-    ;;
-
-  *)
-    source ${MACHINE_FILE}
-    ;;
-
-esac
+source $USHDIR/source_machine_file.sh
+eval ${PRE_TASK_CMDS}
 
 nprocs=$(( NNODES_MAKE_ICS*PPN_MAKE_ICS ))
 
-if [ -z ${RUN_CMD_UTILS:-} ] ; then
+if [ -z "${RUN_CMD_UTILS:-}" ] ; then
   print_err_msg_exit "\
   Run command was not set in machine file. \
   Please set RUN_CMD_UTILS for your platform"
@@ -126,7 +111,7 @@ fi
 #-----------------------------------------------------------------------
 #
 extrn_mdl_staging_dir="${CYCLE_DIR}/${EXTRN_MDL_NAME_ICS}/for_ICS"
-extrn_mdl_var_defns_fp="${extrn_mdl_staging_dir}/${EXTRN_MDL_ICS_VAR_DEFNS_FN}"
+extrn_mdl_var_defns_fp="${extrn_mdl_staging_dir}/${EXTRN_MDL_VAR_DEFNS_FN}"
 . ${extrn_mdl_var_defns_fp}
 #
 #-----------------------------------------------------------------------
@@ -153,12 +138,10 @@ case "${CCPP_PHYS_SUITE}" in
   "FV3_GFS_2017_gfdlmp" | \
   "FV3_GFS_2017_gfdlmp_regional" | \
   "FV3_GFS_v16" | \
-  "FV3_GFS_v15p2" | "FV3_CPT_v0" )
+  "FV3_GFS_v15p2" )
     varmap_file="GFSphys_var_map.txt"
     ;;
 #
-  "FV3_GSD_v0" | \
-  "FV3_GSD_SAR" | \
   "FV3_RRFS_v1alpha" | \
   "FV3_RRFS_v1beta" | \
   "FV3_GFS_v15_thompson_mynn_lam3km" | \
@@ -454,7 +437,7 @@ case "${EXTRN_MDL_NAME_ICS}" in
 #
   geogrid_file_input_grid="${FIXgsm}/geo_em.d01.nc_RAPX"
   vgtyp_from_climo=True
-  sotyp_from_climo=False
+  sotyp_from_climo=True
   vgfrc_from_climo=True
   minmax_vgfrc_from_climo=True
   lai_from_climo=True

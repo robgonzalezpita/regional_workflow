@@ -204,6 +204,9 @@ DO_SKEB=$(boolify $DO_SKEB)
 
 check_var_valid_value "DO_SPP" "valid_vals_DO_SPP"
 DO_SPP=$(boolify $DO_SPP)
+
+check_var_valid_value "DO_LSM_SPP" "valid_vals_DO_LSM_SPP"
+DO_LSM_SPP=$(boolify $DO_LSM_SPP)
 #
 #-----------------------------------------------------------------------
 #
@@ -227,14 +230,82 @@ fi
 #
 #-----------------------------------------------------------------------
 #
-# If running with SPP, count the number of entries in SPP_VAR_LIST to
-# correctly set N_VAR_SPP, otherwise set it to zero. 
+# If running with SPP in MYNN PBL, MYNN SFC, GSL GWD, Thompson MP, or 
+# RRTMG, count the number of entries in SPP_VAR_LIST to correctly set 
+# N_VAR_SPP, otherwise set it to zero. 
 #
 #-----------------------------------------------------------------------
 #
 N_VAR_SPP=0
 if [ "${DO_SPP}" = "TRUE" ]; then
   N_VAR_SPP=${#SPP_VAR_LIST[@]}
+fi
+#
+#-----------------------------------------------------------------------
+#
+# If running with Noah or RUC-LSM SPP, count the number of entries in 
+# LSM_SPP_VAR_LIST to correctly set N_VAR_LNDP, otherwise set it to zero.
+# Also set LNDP_TYPE to 2 for LSM SPP, otherwise set it to zero.  Finally,
+# initialize an "FHCYC_LSM_SPP" variable to 0 and set it to 999 if LSM SPP
+# is turned on.  This requirement is necessary since LSM SPP cannot run with 
+# FHCYC=0 at the moment, but FHCYC cannot be set to anything less than the
+# length of the forecast either.  A bug fix will be submitted to 
+# ufs-weather-model soon, at which point, this requirement can be removed
+# from regional_workflow. 
+#
+#-----------------------------------------------------------------------
+#
+N_VAR_LNDP=0
+LNDP_TYPE=0
+FHCYC_LSM_SPP_OR_NOT=0
+if [ "${DO_LSM_SPP}" = "TRUE" ]; then
+  N_VAR_LNDP=${#LSM_SPP_VAR_LIST[@]}
+  LNDP_TYPE=2
+  FHCYC_LSM_SPP_OR_NOT=999
+fi
+#
+#-----------------------------------------------------------------------
+#
+# If running with SPP, confirm that each SPP-related namelist value 
+# contains the same number of entries as N_VAR_SPP (set above to be equal
+# to the number of entries in SPP_VAR_LIST).
+#
+#-----------------------------------------------------------------------
+#
+if [ "${DO_SPP}" = "TRUE" ]; then
+  if [ "${#SPP_MAG_LIST[@]}" != "${N_VAR_SPP}" ] || \
+     [ "${#SPP_LSCALE[@]}" != "${N_VAR_SPP}" ] || \
+     [ "${#SPP_TSCALE[@]}" != "${N_VAR_SPP}" ] || \
+     [ "${#SPP_SIGTOP1[@]}" != "${N_VAR_SPP}" ] || \
+     [ "${#SPP_SIGTOP2[@]}" != "${N_VAR_SPP}" ] || \
+     [ "${#SPP_STDDEV_CUTOFF[@]}" != "${N_VAR_SPP}" ] || \
+     [ "${#ISEED_SPP[@]}" != "${N_VAR_SPP}" ]; then
+  print_err_msg_exit "\
+All MYNN PBL, MYNN SFC, GSL GWD, Thompson MP, or RRTMG SPP-related namelist 
+variables set in ${CONFIG_FN} must be equal in number of entries to what is 
+found in SPP_VAR_LIST:
+  Number of entries in SPP_VAR_LIST = \"${#SPP_VAR_LIST[@]}\""
+  fi
+fi
+#
+#-----------------------------------------------------------------------
+#
+# If running with LSM SPP, confirm that each LSM SPP-related namelist
+# value contains the same number of entries as N_VAR_LNDP (set above to
+# be equal to the number of entries in LSM_SPP_VAR_LIST).
+#
+#-----------------------------------------------------------------------
+#
+if [ "${DO_LSM_SPP}" = "TRUE" ]; then
+  if [ "${#LSM_SPP_MAG_LIST[@]}" != "${N_VAR_LNDP}" ] || \
+     [ "${#LSM_SPP_LSCALE[@]}" != "${N_VAR_LNDP}" ] || \
+     [ "${#LSM_SPP_TSCALE[@]}" != "${N_VAR_LNDP}" ]; then
+  print_err_msg_exit "\
+All Noah or RUC-LSM SPP-related namelist variables (except ISEED_LSM_SPP) 
+set in ${CONFIG_FN} must be equal in number of entries to what is found in 
+SPP_VAR_LIST:
+  Number of entries in SPP_VAR_LIST = \"${#LSM_SPP_VAR_LIST[@]}\""
+  fi
 fi
 #
 #-----------------------------------------------------------------------
@@ -427,7 +498,7 @@ check_var_valid_value "MACHINE" "valid_vals_MACHINE"
 #
 RELATIVE_LINK_FLAG="--relative"
 MACHINE_FILE=${MACHINE_FILE:-${USHDIR}/machine/$(echo_lowercase $MACHINE).sh}
-source ${MACHINE_FILE}
+source $USHDIR/source_machine_file.sh
 
 if [ -z "${NCORES_PER_NODE:-}" ]; then
   print_err_msg_exit "\
@@ -444,7 +515,7 @@ One or more fix file directories have not been specified for this machine:
   FIXlut = \"${FIXlut:-\"\"}
   TOPO_DIR = \"${TOPO_DIR:-\"\"}
   SFC_CLIMO_INPUT_DIR = \"${SFC_CLIMO_INPUT_DIR:-\"\"}
-  FIXLAM_NCO_BASEDIR = \"${FIXLAM_NCO_BASEDIR:-\"\"}
+  DOMAIN_PREGEN_BASEDIR = \"${DOMAIN_PREGEN_BASEDIR:-\"\"}
 You can specify the missing location(s) in ${machine_file}"
 fi
 
@@ -452,7 +523,7 @@ fi
 #
 #-----------------------------------------------------------------------
 #
-# Set the names of the build and workflow environment files (if not 
+# Set the names of the build and workflow module files (if not 
 # already specified by the user).  These are the files that need to be 
 # sourced before building the component SRW App codes and running various 
 # workflow scripts, respectively.
@@ -460,8 +531,8 @@ fi
 #-----------------------------------------------------------------------
 #
 machine=$(echo_lowercase ${MACHINE})
-WFLOW_ENV_FN=${WFLOW_ENV_FN:-"wflow_${machine}.env"}
-BUILD_ENV_FN=${BUILD_ENV_FN:-"build_${machine}_${COMPILER}.env"}
+WFLOW_MOD_FN=${WFLOW_MOD_FN:-"wflow_${machine}"}
+BUILD_MOD_FN=${BUILD_MOD_FN:-"build_${machine}_${COMPILER}"}
 #
 #-----------------------------------------------------------------------
 #
@@ -749,6 +820,22 @@ if [ ${USE_CUSTOM_POST_CONFIG_FILE} = "TRUE" ]; then
 The custom post configuration specified by CUSTOM_POST_CONFIG_FP does not 
 exist:
   CUSTOM_POST_CONFIG_FP = \"${CUSTOM_POST_CONFIG_FP}\""
+  fi
+fi
+#
+#-----------------------------------------------------------------------
+#
+# If using external CRTM fix files to allow post-processing of synthetic
+# satellite products from the UPP, then make sure the fix file directory
+# exists.
+#
+#-----------------------------------------------------------------------
+#
+if [ ${USE_CRTM} = "TRUE" ]; then
+  if [ ! -d "${CRTM_DIR}" ]; then
+    print_err_msg_exit "
+The external CRTM fix file directory specified by CRTM_DIR does not exist:
+  CRTM_DIR = \"${CRTM_DIR}\""
   fi
 fi
 #
@@ -1054,7 +1141,7 @@ check_for_preexist_dir_file "$EXPTDIR" "${PREEXISTING_DIR_METHOD}"
 # is not placed directly under COMROOT but several directories further
 # down.  More specifically, for a cycle starting at yyyymmddhh, it is at
 #
-#   $COMROOT/$NET/$envir/$RUN.$yyyymmdd/$hh
+#   $COMROOT/$NET/$model_ver/$RUN.$yyyymmdd/$hh
 #
 # Below, we set COMROOT in terms of PTMP as COMROOT="$PTMP/com".  COMOROOT 
 # is not used by the workflow in community mode.
@@ -1064,7 +1151,7 @@ check_for_preexist_dir_file "$EXPTDIR" "${PREEXISTING_DIR_METHOD}"
 # from the RUN_POST_TN task will be placed, i.e. it is the cycle-independent 
 # portion of the RUN_POST_TN task's output directory.  It is given by
 #
-#   $COMROOT/$NET/$envir
+#   $COMROOT/$NET/$model_ver
 #
 # COMOUT_BASEDIR is not used by the workflow in community mode.
 #
@@ -1077,19 +1164,15 @@ FIXclim="${EXPTDIR}/fix_clim"
 FIXLAM="${EXPTDIR}/fix_lam"
 
 if [ "${RUN_ENVIR}" = "nco" ]; then
-
-  CYCLE_BASEDIR="$STMP/tmpnwprd/$RUN"
+  CYCLE_BASEDIR="${STMP}/tmpnwprd/${RUN}"
   check_for_preexist_dir_file "${CYCLE_BASEDIR}" "${PREEXISTING_DIR_METHOD}"
-  COMROOT="$PTMP/com"
-  COMOUT_BASEDIR="$COMROOT/$NET/$envir"
+  COMROOT="${PTMP}/com"
+  COMOUT_BASEDIR="${COMROOT}/${NET}/${model_ver}"
   check_for_preexist_dir_file "${COMOUT_BASEDIR}" "${PREEXISTING_DIR_METHOD}"
-
 else
-
   CYCLE_BASEDIR="$EXPTDIR"
   COMROOT=""
   COMOUT_BASEDIR=""
-
 fi
 #
 #-----------------------------------------------------------------------
@@ -1129,11 +1212,22 @@ fi
 #
 dot_ccpp_phys_suite_or_null=".${CCPP_PHYS_SUITE}"
 
-DATA_TABLE_TMPL_FN="${DATA_TABLE_FN}"
-DIAG_TABLE_TMPL_FN="${DIAG_TABLE_FN}${dot_ccpp_phys_suite_or_null}"
-FIELD_TABLE_TMPL_FN="${FIELD_TABLE_FN}${dot_ccpp_phys_suite_or_null}"
-MODEL_CONFIG_TMPL_FN="${MODEL_CONFIG_FN}"
-NEMS_CONFIG_TMPL_FN="${NEMS_CONFIG_FN}"
+# Names of input files that the forecast model (ufs-weather-model) expects 
+# to read in.  These should only be changed if the input file names in the 
+# forecast model code are changed.
+#----------------------------------
+DATA_TABLE_FN="data_table"
+DIAG_TABLE_FN="diag_table"
+FIELD_TABLE_FN="field_table"
+MODEL_CONFIG_FN="model_configure"
+NEMS_CONFIG_FN="nems.configure"
+#----------------------------------
+
+DATA_TABLE_TMPL_FN="${DATA_TABLE_TMPL_FN:-${DATA_TABLE_FN}}"
+DIAG_TABLE_TMPL_FN="${DIAG_TABLE_TMPL_FN:-${DIAG_TABLE_FN}}${dot_ccpp_phys_suite_or_null}"
+FIELD_TABLE_TMPL_FN="${FIELD_TABLE_TMPL_FN:-${FIELD_TABLE_FN}}${dot_ccpp_phys_suite_or_null}"
+MODEL_CONFIG_TMPL_FN="${MODEL_CONFIG_TMPL_FN:-${MODEL_CONFIG_FN}}"
+NEMS_CONFIG_TMPL_FN="${NEMS_CONFIG_TMPL_FN:-${NEMS_CONFIG_FN}}"
 
 DATA_TABLE_TMPL_FP="${TEMPLATE_DIR}/${DATA_TABLE_TMPL_FN}"
 DIAG_TABLE_TMPL_FP="${TEMPLATE_DIR}/${DIAG_TABLE_TMPL_FN}"
@@ -1258,14 +1352,15 @@ USE_USER_STAGED_EXTRN_FILES=$(boolify $USE_USER_STAGED_EXTRN_FILES)
 #
 if [ "${USE_USER_STAGED_EXTRN_FILES}" = "TRUE" ]; then
 
-  if [ ! -d "${EXTRN_MDL_SOURCE_BASEDIR_ICS}" ]; then
+  # Check for the base directory up to the first templated field.
+  if [ ! -d "$(dirname ${EXTRN_MDL_SOURCE_BASEDIR_ICS%%\$*})" ]; then
     print_err_msg_exit "\
 The directory (EXTRN_MDL_SOURCE_BASEDIR_ICS) in which the user-staged 
 external model files for generating ICs should be located does not exist:
   EXTRN_MDL_SOURCE_BASEDIR_ICS = \"${EXTRN_MDL_SOURCE_BASEDIR_ICS}\""
   fi
 
-  if [ ! -d "${EXTRN_MDL_SOURCE_BASEDIR_LBCS}" ]; then
+  if [ ! -d "$(dirname ${EXTRN_MDL_SOURCE_BASEDIR_LBCS%%\$*})" ]; then
     print_err_msg_exit "\
 The directory (EXTRN_MDL_SOURCE_BASEDIR_LBCS) in which the user-staged 
 external model files for generating LBCs should be located does not exist:
@@ -1306,6 +1401,21 @@ fi
 #
 #-----------------------------------------------------------------------
 #
+# Make sure that DO_ENSEMBLE is set to TRUE when running ensemble vx.
+#
+#-----------------------------------------------------------------------
+#
+if [ "${DO_ENSEMBLE}" = "FALSE" ] && [ "${RUN_TASK_VX_ENSGRID}" = "TRUE" -o \
+   "${RUN_TASK_VX_ENSPOINT}" = "TRUE" ]; then
+  print_err_msg_exit "\
+Ensemble verification can not be run unless running in ensemble mode:
+   DO_ENSEMBLE = \"${DO_ENSEMBLE}\"
+   RUN_TASK_VX_ENSGRID = \"${RUN_TASK_VX_ENSGRID}\"
+   RUN_TASK_VX_ENSPOINT = \"${RUN_TASK_VX_ENSPOINT}\""
+fi
+#
+#-----------------------------------------------------------------------
+#
 # Set the full path to the forecast model executable.
 #
 #-----------------------------------------------------------------------
@@ -1326,7 +1436,7 @@ WFLOW_LAUNCH_SCRIPT_FP="$USHDIR/${WFLOW_LAUNCH_SCRIPT_FN}"
 WFLOW_LAUNCH_LOG_FP="$EXPTDIR/${WFLOW_LAUNCH_LOG_FN}"
 if [ "${USE_CRON_TO_RELAUNCH}" = "TRUE" ]; then
   CRONTAB_LINE="*/${CRON_RELAUNCH_INTVL_MNTS} * * * * cd $EXPTDIR && \
-./${WFLOW_LAUNCH_SCRIPT_FN} >> ./${WFLOW_LAUNCH_LOG_FN} 2>&1"
+./${WFLOW_LAUNCH_SCRIPT_FN} called_from_cron=\"TRUE\" >> ./${WFLOW_LAUNCH_LOG_FN} 2>&1"
 else
   CRONTAB_LINE=""
 fi
@@ -1365,7 +1475,7 @@ LOAD_MODULES_RUN_TASK_FP="$USHDIR/load_modules_run_task.sh"
 #
 if [ "${RUN_ENVIR}" = "nco" ]; then
 
-  nco_fix_dir="${FIXLAM_NCO_BASEDIR}/${PREDEF_GRID_NAME}"
+  nco_fix_dir="${DOMAIN_PREGEN_BASEDIR}/${PREDEF_GRID_NAME}"
   if [ ! -d "${nco_fix_dir}" ]; then
     print_err_msg_exit "\
 The directory (nco_fix_dir) that should contain the pregenerated grid,
@@ -1381,11 +1491,11 @@ orography, and surface climatology files does not exist:
 When RUN_ENVIR is set to \"nco\", the workflow assumes that pregenerated
 grid files already exist in the directory 
 
-  \${FIXLAM_NCO_BASEDIR}/\${PREDEF_GRID_NAME}
+  \${DOMAIN_PREGEN_BASEDIR}/\${PREDEF_GRID_NAME}
 
 where
 
-  FIXLAM_NCO_BASEDIR = \"${FIXLAM_NCO_BASEDIR}\"
+  DOMAIN_PREGEN_BASEDIR = \"${DOMAIN_PREGEN_BASEDIR}\"
   PREDEF_GRID_NAME = \"${PREDEF_GRID_NAME}\"
 
 Thus, the MAKE_GRID_TN task must not be run (i.e. RUN_TASK_MAKE_GRID must 
@@ -1419,11 +1529,11 @@ Reset values are:
     msg="
 When RUN_ENVIR is set to \"nco\", the workflow assumes that pregenerated
 orography files already exist in the directory 
-  \${FIXLAM_NCO_BASEDIR}/\${PREDEF_GRID_NAME}
+  \${DOMAIN_PREGEN_BASEDIR}/\${PREDEF_GRID_NAME}
 
 where
 
-  FIXLAM_NCO_BASEDIR = \"${FIXLAM_NCO_BASEDIR}\"
+  DOMAIN_PREGEN_BASEDIR = \"${DOMAIN_PREGEN_BASEDIR}\"
   PREDEF_GRID_NAME = \"${PREDEF_GRID_NAME}\"
 
 Thus, the MAKE_OROG_TN task must not be run (i.e. RUN_TASK_MAKE_OROG must 
@@ -1458,11 +1568,11 @@ Reset values are:
 When RUN_ENVIR is set to \"nco\", the workflow assumes that pregenerated
 surface climatology files already exist in the directory 
 
-  \${FIXLAM_NCO_BASEDIR}/\${PREDEF_GRID_NAME}
+  \${DOMAIN_PREGEN_BASEDIR}/\${PREDEF_GRID_NAME}
 
 where
 
-  FIXLAM_NCO_BASEDIR = \"${FIXLAM_NCO_BASEDIR}\"
+  DOMAIN_PREGEN_BASEDIR = \"${DOMAIN_PREGEN_BASEDIR}\"
   PREDEF_GRID_NAME = \"${PREDEF_GRID_NAME}\"
 
 Thus, the MAKE_SFC_CLIMO_TN task must not be run (i.e. RUN_TASK_MAKE_SFC_CLIMO 
@@ -1489,8 +1599,7 @@ one above.  Reset values are:
 
   fi
 
-  if [ "${RUN_TASK_VX_GRIDSTAT}" = "TRUE" ] || \
-     [ "${RUN_TASK_VX_GRIDSTAT}" = "FALSE" ]; then
+  if [ "${RUN_TASK_VX_GRIDSTAT}" = "TRUE" ]; then
 
     msg="
 When RUN_ENVIR is set to \"nco\", it is assumed that the verification
@@ -1509,8 +1618,7 @@ Reset value is:"
 
   fi
 
-  if [ "${RUN_TASK_VX_POINTSTAT}" = "TRUE" ] || \
-     [ "${RUN_TASK_VX_POINTSTAT}" = "FALSE" ]; then
+  if [ "${RUN_TASK_VX_POINTSTAT}" = "TRUE" ]; then
 
     msg="
 When RUN_ENVIR is set to \"nco\", it is assumed that the verification
@@ -1529,8 +1637,7 @@ Reset value is:"
 
   fi
 
-  if [ "${RUN_TASK_VX_ENSGRID}" = "TRUE" ] || \
-     [ "${RUN_TASK_VX_ENSGRID}" = "FALSE" ]; then
+  if [ "${RUN_TASK_VX_ENSGRID}" = "TRUE" ]; then
 
     msg="
 When RUN_ENVIR is set to \"nco\", it is assumed that the verification
@@ -1924,7 +2031,6 @@ SUB_HOURLY_POST is NOT available with Inline Post yet."
   fi
 fi
 
-
 check_var_valid_value "QUILTING" "valid_vals_QUILTING"
 QUILTING=$(boolify $QUILTING)
 
@@ -2054,7 +2160,6 @@ GLOBAL_VAR_DEFNS_FP="$EXPTDIR/${GLOBAL_VAR_DEFNS_FN}"
 # variable definitions file.
 #
 #-----------------------------------------------------------------------
-
 #
 print_info_msg "
 Creating list of default experiment variable definitions..." 
@@ -2342,6 +2447,12 @@ FV3_NML_ENSMEM_FPS=${fv3_nml_ensmem_fps_str}
 #
 GLOBAL_VAR_DEFNS_FP='${GLOBAL_VAR_DEFNS_FP}'
 
+DATA_TABLE_FN='${DATA_TABLE_FN}'
+DIAG_TABLE_FN='${DIAG_TABLE_FN}'
+FIELD_TABLE_FN='${FIELD_TABLE_FN}'
+MODEL_CONFIG_FN='${MODEL_CONFIG_FN}'
+NEMS_CONFIG_FN='${NEMS_CONFIG_FN}'
+
 DATA_TABLE_TMPL_FN='${DATA_TABLE_TMPL_FN}'
 DIAG_TABLE_TMPL_FN='${DIAG_TABLE_TMPL_FN}'
 FIELD_TABLE_TMPL_FN='${FIELD_TABLE_TMPL_FN}'
@@ -2590,13 +2701,19 @@ PE_MEMBER01='${PE_MEMBER01}'
 #
 #-----------------------------------------------------------------------
 #
-# IF DO_SPP is set to \"TRUE\", N_VAR_SPP specifies the number of physics 
-# parameterizations that are perturbed with SPP.  Otherwise, N_VAR_SPP 
-# is set 0.
+# IF DO_SPP is set to "TRUE", N_VAR_SPP specifies the number of physics 
+# parameterizations that are perturbed with SPP.  If DO_LSM_SPP is set to
+# "TRUE", N_VAR_LNDP specifies the number of LSM parameters that are 
+# perturbed.  LNDP_TYPE determines the way LSM perturbations are employed
+# and FHCYC_LSM_SPP_OR_NOT sets FHCYC based on whether LSM perturbations
+# are turned on or not.
 #
 #-----------------------------------------------------------------------
 #
 N_VAR_SPP='${N_VAR_SPP}'
+N_VAR_LNDP='${N_VAR_LNDP}'
+LNDP_TYPE='${LNDP_TYPE}'
+FHCYC_LSM_SPP_OR_NOT='${FHCYC_LSM_SPP_OR_NOT}'
 "
 #
 # Done with constructing the contents of the variable definitions file,
