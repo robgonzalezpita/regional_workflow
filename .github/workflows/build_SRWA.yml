@@ -84,6 +84,5 @@ jobs:
       - name: Build Short Range Weather App using test/build.sh
         run: |
           cd ../${{ github.sha }}/ufs-srweather-app/test/
-          ./build.sh >& build_test.out
           ./build.sh 2>&1 | tee build_test.out
 
