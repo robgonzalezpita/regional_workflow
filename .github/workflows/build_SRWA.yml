@@ -46,7 +46,7 @@ jobs:
             echo 'branch exists!'
             git checkout ${{ github.ref_name }}
           else
-            git checkout rrfs_ci
+            git checkout ${{ github.base_ref }}
           fi
           git branch
 
@@ -85,5 +85,5 @@ jobs:
         run: |
           cd ../${{ github.sha }}/ufs-srweather-app/test/
           ./build.sh >& build_test.out
-          cat build_test*
+          ./build.sh 2>&1 | tee build_test.out
 
