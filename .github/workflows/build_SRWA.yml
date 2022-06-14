@@ -2,10 +2,13 @@
 name: Build SRWA
 
 on:
-  push:
-    branches: [ feature/CI_build_test ]
+# Enable the ability to manually run this workflow, as well as when the ci-aws-intel-build label is attached
+  workflow_dispatch:
   pull_request:
-    branches: [ rrfs_ci, feature/CI_build_test ]
+    branches: 
+      - rrfs_ci 
+    types: 
+      - labeled 
 
 # Use a default login shell which loads intel/oneapi/setvars.sh, and lmod path 
 defaults:
@@ -13,27 +16,14 @@ defaults:
     shell: bash -l {0}
 
 jobs:
- 
-  Clone_rrfs_ci_pcluster:
-    # Auxillary repository needed to insert env files to run CI tests in the short term 
-    name: Clone RRFS CI repo
-    # This job will run on AWS Parallel Cluster head node
-    runs-on: self-hosted
-    steps:
-    
-    - name: Checkout robgonzalezpita/rrfs-ci-pcluster Repo
-      uses: actions/checkout@v3
-      with:
-        repository: robgonzalezpita/rrfs-ci-pcluster
-        path: ./rrfs-ci-pcluster
   
   Configure_SRWA:
     name: Checkout SRWA in parent directory 
     runs-on: self-hosted 
-    needs: [ Clone_rrfs_ci_pcluster ]
+    if: ${{ github.event.label.name == 'ci-aws-intel-build' }}
 
     steps:
-      # Checkout the SRWA - in parent directory, with commit sha-1 in filepath to avoid multiple PR Conflicts, & track builds by commit
+      # Checkout the SRWA - in parent directory, with commit sha-1 in filepath to avoid multiple PR Conflicts, & track build tests by commit
       # Specify branch used for testing, if there is not a similar named branch in ufs-SRWA
       - name: Checkout SRWA 
         run: |
@@ -41,6 +31,11 @@ jobs:
           mkdir ${{ github.sha }} && cd ${{ github.sha }} 
           git clone https://github.com/NOAA-GSL/ufs-srweather-app.git
           cd ufs-srweather-app
+          
+          echo "Github.ref_name" ${{ github.ref_name }} 
+          echo "Github.base_ref" ${{ github.base_ref }} 
+          echo "Github.head_ref" ${{ github.head_ref }}
+
           exists=`git show-ref ${{ github.ref }}`
           if [ -n "$exists" ]; then
             echo 'branch exists!'
@@ -48,17 +43,7 @@ jobs:
           else
             git checkout ${{ github.base_ref }}
           fi
-          git branch
-
-      # This step is needed until NOAA-GSL rrfs_ci branch is updated in ufs-srwa repository
-      - name: Update scripts
-        run: |
-          cd ../${{ github.sha }}/ufs-srweather-app/test/
-          sed -i 's/\bwcoss_dell_p3\b/& aws/' build.sh
-          cd ../env/
-          sed -i "99i  \  `hostname -f`)     MACHINE_ID=aws ;;   ### pcluster" detect_machine.sh
-          cp ../../../regional_workflow/rrfs-ci-pcluster/build_linux_intel.env build_aws_intel.env
-          cp ../../../regional_workflow/rrfs-ci-pcluster/wflow_linux.env wflow_aws.env 
+          git branch -a
       
       - name: Checkout Externals & Delete Regional Workflow
         run: |
@@ -77,12 +62,12 @@ jobs:
   
   Build_SRWA:
     name: Build SRWA 
+    if: ${{ github.event.label.name == 'ci-aws-intel-build' }}
     runs-on: self-hosted
-    needs: [ Clone_rrfs_ci_pcluster, Configure_SRWA ]
+    needs: Configure_SRWA 
     
     steps:
       - name: Build Short Range Weather App using test/build.sh
         run: |
           cd ../${{ github.sha }}/ufs-srweather-app/test/
-          ./build.sh 2>&1 | tee build_test.out
-
+          ./build.sh aws 2>&1 | tee build_test.out
