@@ -2,13 +2,13 @@
 name: Build SRWA
 
 on:
-# Enable the ability to manually run this workflow, as well as when the ci-aws-intel-build label is attached
+# Enable the ability to manually run this workflow, as well as when the ci-aws-intel-build label is attached to a PR, and if the PR is updated
   workflow_dispatch:
   pull_request:
     branches: 
       - rrfs_ci 
     types: 
-      - labeled 
+      - labeled
 
 # Use a default login shell which loads intel/oneapi/setvars.sh, and lmod path 
 defaults:
@@ -17,57 +17,102 @@ defaults:
 
 jobs:
   
-  Configure_SRWA:
-    name: Checkout SRWA in parent directory 
+  Set_Repo_and_Branch:
+    name: Set the SRWA repo and branch names  
     runs-on: self-hosted 
     if: ${{ github.event.label.name == 'ci-aws-intel-build' }}
+    outputs: 
+      SRWA_REPO: ${{ steps.set_repo.outputs.SRWA_REPO }}
+      SRWA_BRANCH: ${{ steps.set_repo.outputs.SRWA_BRANCH }}
+      
+  # If a developer submits a concurrent PR to the App, set the SRWA_REPO & SRWA_BRANCH env variables to their repo and branch,
+  # if not, set the outputs to the rrfs_ci branch of NOAA-GSL/ufs-srweather-app  
+    steps:
+      - name: Set Repo and Branch Variables 
+        id: set_repo
+        run: |
+          new_branch=`git ls-remote https://github.com/${{ github.actor }}/ufs-srweather-app.git ${{ github.head_ref }}`
+          if [ -n "$new_branch" ]; then
+            echo "SRWA_REPO is being set to : ${{ github.actor }}/ufs-srweather-app.git" 
+            echo "::set-output name=SRWA_REPO::${{ github.actor }}/ufs-srweather-app"
+            echo "SRWA_BRANCH is being set to : " ${{ github.head_ref }}
+            echo "::set-output name=SRWA_BRANCH::${{ github.head_ref }}"
+          else
+            echo "There is not a head_ref with the same name as this PR in the SRW App, the default SRW App (NOAA-GSL fork) repository will be used."
+            echo "::set-output name=SRWA_REPO::NOAA-GSL/ufs-srweather-app"
+            echo "There is not a similar branch name associated with this PR in the SRW App, the default SRWA App branch (rrfs_ci) will be used."
+            echo "::set-output name=SRWA_BRANCH::rrfs_ci"
+          fi
+
+  # Clone the SRWA - with github.run_id in filepath to avoid multiple PR Conflicts, & track build tests by their run_id
+  # (Cloning repositories outside of the GITHUB_WORKSPACE directory is not supported with actions/checkout@v3, so it needs to be moved into the parent directory seperately)
+  Clone_SRWA:
+    name: Clone SRWA and move into parent directory
+    runs-on: self-hosted 
+    if: ${{ github.event.label.name == 'ci-aws-intel-build' }}
+    needs: [ Set_Repo_and_Branch ]
+    
+    steps:
+      - name: Clone SRWA 
+        uses: actions/checkout@v3
+        with: 
+          repository: ${{ needs.Set_Repo_and_Branch.outputs.SRWA_REPO }}
+          ref: ${{ needs.Set_Repo_and_Branch.outputs.SRWA_BRANCH }}
+          path: ufs-srweather-app-${{ github.run_id }}
+      
+      - name: Move SRWA 
+        run: |
+          cp -r ufs-srweather-app-${{ github.run_id }}/. ../ufs-srweather-app-${{ github.run_id }}/
+          rm -rf ufs-srweather-app-${{ github.run_id }}
+
+  Configure_SRWA:
+    name: Checkout_Externals and replace with 'this' version of regional_workflow
+    runs-on: self-hosted 
+    if: ${{ github.event.label.name == 'ci-aws-intel-build' }}
+    needs: [ Set_Repo_and_Branch, Clone_SRWA ]
 
     steps:
-      # Checkout the SRWA - in parent directory, with commit sha-1 in filepath to avoid multiple PR Conflicts, & track build tests by commit
-      # Specify branch used for testing, if there is not a similar named branch in ufs-SRWA
-      - name: Checkout SRWA 
-        run: |
-          cd ../
-          mkdir ${{ github.sha }} && cd ${{ github.sha }} 
-          git clone https://github.com/NOAA-GSL/ufs-srweather-app.git
-          cd ufs-srweather-app
-          
-          echo "Github.ref_name" ${{ github.ref_name }} 
-          echo "Github.base_ref" ${{ github.base_ref }} 
-          echo "Github.head_ref" ${{ github.head_ref }}
-
-          exists=`git show-ref ${{ github.ref }}`
-          if [ -n "$exists" ]; then
-            echo 'branch exists!'
-            git checkout ${{ github.ref_name }}
-          else
-            git checkout ${{ github.base_ref }}
-          fi
-          git branch -a
-      
       - name: Checkout Externals & Delete Regional Workflow
         run: |
-          cd ../${{ github.sha }}/ufs-srweather-app
+          cd ../ufs-srweather-app-${{ github.run_id }}
           ./manage_externals/checkout_externals
           rm -rf regional_workflow
-         
-      - name: Checkout this version of Regional Workflow
+
+      - name: Checkout 'this' version of Regional Workflow
         uses: actions/checkout@v3
         with:
           clean: false
-       
-      - name: Insert this Version of Regional Workflow
+
+      - name: Insert this Version of Regional Workflow in correct location in ufs-srweather-app directory
         run: |
-          cp -r ${{ github.workspace }} ../${{ github.sha }}/ufs-srweather-app/regional_workflow
+          mkdir -p ../ufs-srweather-app-${{ github.run_id }}/regional_workflow
+          cp -r ${{ github.workspace }}/. ../ufs-srweather-app-${{ github.run_id }}/regional_workflow/
   
   Build_SRWA:
     name: Build SRWA 
-    if: ${{ github.event.label.name == 'ci-aws-intel-build' }}
     runs-on: self-hosted
-    needs: Configure_SRWA 
-    
+    if: ${{ github.event.label.name == 'ci-aws-intel-build' }}
+    needs: [ Set_Repo_and_Branch, Clone_SRWA, Configure_SRWA ]
     steps:
       - name: Build Short Range Weather App using test/build.sh
         run: |
-          cd ../${{ github.sha }}/ufs-srweather-app/test/
+          cd ../ufs-srweather-app-${{ github.run_id }}/test/
           ./build.sh aws 2>&1 | tee build_test.out
+  
+  Build_Status:
+    name: Check Build Sucess or Failure 
+    runs-on: self-hosted 
+    if: ${{ github.event.label.name == 'ci-aws-intel-build' }}
+    needs: [ Set_Repo_and_Branch, Clone_SRWA, Configure_SRWA, Build_SRWA ]
+    
+    steps:
+      - name: Get build status
+        run: |
+          cd ../ufs-srweather-app-${{ github.run_id }}/test/
+          status=`tail -1 build_test.out |cut -d ' ' -f 3-`
+          if [ $status == PASS ]; then
+            exit 0
+          else 
+            exit 1
+          fi
+          
