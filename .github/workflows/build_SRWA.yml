@@ -46,6 +46,7 @@ jobs:
 
   # Clone the SRWA - with github.run_id in filepath to avoid multiple PR Conflicts, & track build tests by their run_id
   # (Cloning repositories outside of the GITHUB_WORKSPACE directory is not supported with actions/checkout@v3, so it needs to be moved into the parent directory seperately)
+  # Relative paths are used here to decouple the running of this workflow from the self-hosted runner itself. We'd like to avoid the added complication of setting up the same directory structure for each SH runner.
   Clone_SRWA:
     name: Clone SRWA and move into parent directory
     runs-on: self-hosted 
@@ -115,4 +116,3 @@ jobs:
           else 
             exit 1
           fi
-          
