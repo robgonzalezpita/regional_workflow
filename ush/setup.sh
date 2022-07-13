@@ -66,6 +66,7 @@ Starting function ${func_name}() in \"${scrfunc_fn}\"...
 #
 . ./check_expt_config_vars.sh
 . ./set_cycle_dates.sh
+. ./set_predef_grid_params.sh
 . ./set_gridparams_GFDLgrid.sh
 . ./set_gridparams_ESGgrid.sh
 . ./link_fix.sh
@@ -136,17 +137,20 @@ fi
 # Make sure that user-defined variables are set to valid values
 #
 # Set binary switch variables to either "TRUE" or "FALSE" by calling
-# boolify so we don't have to consider other valid values later on
+# boolify so we don't have to consider other valid values later on.
 #
 #-----------------------------------------------------------------------
 #
 check_var_valid_value "RUN_ENVIR" "valid_vals_RUN_ENVIR"
 
-check_var_valid_value "VERBOSE" "valid_vals_VERBOSE"
-VERBOSE=$(boolify $VERBOSE)
+check_var_valid_value "VERBOSE" "valid_vals_BOOLEAN"
+VERBOSE=$(boolify "$VERBOSE")
 
-check_var_valid_value "DEBUG" "valid_vals_DEBUG"
-DEBUG=$(boolify $DEBUG)
+check_var_valid_value "DEBUG" "valid_vals_BOOLEAN"
+DEBUG=$(boolify "$DEBUG")
+
+check_var_valid_value "USE_CRON_TO_RELAUNCH" "valid_vals_BOOLEAN"
+USE_CRON_TO_RELAUNCH=$(boolify "${USE_CRON_TO_RELAUNCH}")
 #
 #-----------------------------------------------------------------------
 #
@@ -160,53 +164,78 @@ if [ "$DEBUG" = "TRUE" ]; then
 Setting VERBOSE to \"TRUE\" because DEBUG has been set to \"TRUE\"..."
   VERBOSE="TRUE"
 fi
+#
+#-----------------------------------------------------------------------
+#
+# Check flags that turn on/off various workflow tasks.
+#
+#-----------------------------------------------------------------------
+#
+check_var_valid_value "RUN_TASK_MAKE_GRID" "valid_vals_BOOLEAN"
+RUN_TASK_MAKE_GRID=$(boolify "${RUN_TASK_MAKE_GRID}")
 
-check_var_valid_value "USE_CRON_TO_RELAUNCH" "valid_vals_USE_CRON_TO_RELAUNCH"
-USE_CRON_TO_RELAUNCH=$(boolify $USE_CRON_TO_RELAUNCH)
+check_var_valid_value "RUN_TASK_MAKE_OROG" "valid_vals_BOOLEAN"
+RUN_TASK_MAKE_OROG=$(boolify "${RUN_TASK_MAKE_OROG}")
 
-check_var_valid_value "RUN_TASK_MAKE_GRID" "valid_vals_RUN_TASK_MAKE_GRID"
-RUN_TASK_MAKE_GRID=$(boolify $RUN_TASK_MAKE_GRID)
+check_var_valid_value "RUN_TASK_MAKE_SFC_CLIMO" "valid_vals_BOOLEAN"
+RUN_TASK_MAKE_SFC_CLIMO=$(boolify "${RUN_TASK_MAKE_SFC_CLIMO}")
 
-check_var_valid_value "RUN_TASK_MAKE_OROG" "valid_vals_RUN_TASK_MAKE_OROG"
-RUN_TASK_MAKE_OROG=$(boolify $RUN_TASK_MAKE_OROG)
+check_var_valid_value "RUN_TASK_GET_EXTRN_ICS" "valid_vals_BOOLEAN"
+RUN_TASK_GET_EXTRN_ICS=$(boolify "${RUN_TASK_GET_EXTRN_ICS}")
 
-check_var_valid_value \
-  "RUN_TASK_MAKE_SFC_CLIMO" "valid_vals_RUN_TASK_MAKE_SFC_CLIMO"
-RUN_TASK_MAKE_SFC_CLIMO=$(boolify $RUN_TASK_MAKE_SFC_CLIMO)
+check_var_valid_value "RUN_TASK_GET_EXTRN_LBCS" "valid_vals_BOOLEAN"
+RUN_TASK_GET_EXTRN_LBCS=$(boolify "${RUN_TASK_GET_EXTRN_LBCS}")
 
-check_var_valid_value \
-  "RUN_TASK_RUN_POST" "valid_vals_RUN_TASK_RUN_POST"
-RUN_TASK_RUN_POST=$(boolify $RUN_TASK_RUN_POST)
+check_var_valid_value "RUN_TASK_RUN_FCST" "valid_vals_BOOLEAN"
+RUN_TASK_RUN_FCST=$(boolify "${RUN_TASK_RUN_FCST}")
 
-check_var_valid_value "RUN_TASK_VX_GRIDSTAT" "valid_vals_RUN_TASK_VX_GRIDSTAT"
-RUN_TASK_VX_GRIDSTAT=$(boolify $RUN_TASK_VX_GRIDSTAT)
+check_var_valid_value "RUN_TASK_RUN_POST" "valid_vals_BOOLEAN"
+RUN_TASK_RUN_POST=$(boolify "${RUN_TASK_RUN_POST}")
 
-check_var_valid_value "RUN_TASK_VX_POINTSTAT" "valid_vals_RUN_TASK_VX_POINTSTAT"
-RUN_TASK_VX_POINTSTAT=$(boolify $RUN_TASK_VX_POINTSTAT)
+check_var_valid_value "RUN_TASK_GET_OBS_CCPA" "valid_vals_BOOLEAN"
+RUN_TASK_GET_OBS_CCPA=$(boolify "${RUN_TASK_GET_OBS_CCPA}")
 
-check_var_valid_value "RUN_TASK_VX_ENSGRID" "valid_vals_RUN_TASK_VX_ENSGRID"
-RUN_TASK_VX_ENSGRID=$(boolify $RUN_TASK_VX_ENSGRID)
+check_var_valid_value "RUN_TASK_GET_OBS_MRMS" "valid_vals_BOOLEAN"
+RUN_TASK_GET_OBS_MRMS=$(boolify "${RUN_TASK_GET_OBS_MRMS}")
 
-check_var_valid_value "RUN_TASK_VX_ENSPOINT" "valid_vals_RUN_TASK_VX_ENSPOINT"
-RUN_TASK_VX_ENSPOINT=$(boolify $RUN_TASK_VX_ENSPOINT)
+check_var_valid_value "RUN_TASK_GET_OBS_NDAS" "valid_vals_BOOLEAN"
+RUN_TASK_GET_OBS_NDAS=$(boolify "${RUN_TASK_GET_OBS_NDAS}")
 
-check_var_valid_value "USE_FVCOM" "valid_vals_USE_FVCOM"
-USE_FVCOM=$(boolify $USE_FVCOM)
+check_var_valid_value "RUN_TASK_VX_GRIDSTAT" "valid_vals_BOOLEAN"
+RUN_TASK_VX_GRIDSTAT=$(boolify "${RUN_TASK_VX_GRIDSTAT}")
 
-check_var_valid_value "DO_SHUM" "valid_vals_DO_SHUM"
-DO_SHUM=$(boolify $DO_SHUM)
+check_var_valid_value "RUN_TASK_VX_POINTSTAT" "valid_vals_BOOLEAN"
+RUN_TASK_VX_POINTSTAT=$(boolify "${RUN_TASK_VX_POINTSTAT}")
 
-check_var_valid_value "DO_SPPT" "valid_vals_DO_SPPT"
-DO_SPPT=$(boolify $DO_SPPT)
+check_var_valid_value "RUN_TASK_VX_ENSGRID" "valid_vals_BOOLEAN"
+RUN_TASK_VX_ENSGRID=$(boolify "${RUN_TASK_VX_ENSGRID}")
 
-check_var_valid_value "DO_SKEB" "valid_vals_DO_SKEB"
-DO_SKEB=$(boolify $DO_SKEB)
+check_var_valid_value "RUN_TASK_VX_ENSPOINT" "valid_vals_BOOLEAN"
+RUN_TASK_VX_ENSPOINT=$(boolify "${RUN_TASK_VX_ENSPOINT}")
+#
+#-----------------------------------------------------------------------
+#
+# Check stochastic physcs flags.
+#
+#-----------------------------------------------------------------------
+#
+check_var_valid_value "DO_SHUM" "valid_vals_BOOLEAN"
+DO_SHUM=$(boolify "${DO_SHUM}")
 
-check_var_valid_value "DO_SPP" "valid_vals_DO_SPP"
-DO_SPP=$(boolify $DO_SPP)
+check_var_valid_value "DO_SPPT" "valid_vals_BOOLEAN"
+DO_SPPT=$(boolify "${DO_SPPT}")
 
-check_var_valid_value "DO_LSM_SPP" "valid_vals_DO_LSM_SPP"
-DO_LSM_SPP=$(boolify $DO_LSM_SPP)
+check_var_valid_value "DO_SKEB" "valid_vals_BOOLEAN"
+DO_SKEB=$(boolify "${DO_SKEB}")
+
+check_var_valid_value "DO_SPP" "valid_vals_BOOLEAN"
+DO_SPP=$(boolify "${DO_SPP}")
+
+check_var_valid_value "DO_LSM_SPP" "valid_vals_BOOLEAN"
+DO_LSM_SPP=$(boolify "${DO_LSM_SPP}")
+
+check_var_valid_value "USE_ZMTNBLCK" "valid_vals_BOOLEAN"
+USE_ZMTNBLCK=$(boolify "${USE_ZMTNBLCK}")
 #
 #-----------------------------------------------------------------------
 #
@@ -257,10 +286,12 @@ fi
 #
 N_VAR_LNDP=0
 LNDP_TYPE=0
+LNDP_MODEL_TYPE=0
 FHCYC_LSM_SPP_OR_NOT=0
 if [ "${DO_LSM_SPP}" = "TRUE" ]; then
   N_VAR_LNDP=${#LSM_SPP_VAR_LIST[@]}
   LNDP_TYPE=2
+  LNDP_MODEL_TYPE=2
   FHCYC_LSM_SPP_OR_NOT=999
 fi
 #
@@ -310,11 +341,6 @@ fi
 #
 #-----------------------------------------------------------------------
 #
-check_var_valid_value "SUB_HOURLY_POST" "valid_vals_SUB_HOURLY_POST"
-SUB_HOURLY_POST=$(boolify $SUB_HOURLY_POST)
-#
-#-----------------------------------------------------------------------
-#
 # Make sure that DOT_OR_USCORE is set to a valid value.
 #
 #-----------------------------------------------------------------------
@@ -330,8 +356,9 @@ check_var_valid_value "DOT_OR_USCORE" "valid_vals_DOT_OR_USCORE"
 #
 #-----------------------------------------------------------------------
 #
-check_var_valid_value "USE_FVCOM" "valid_vals_USE_FVCOM"
-USE_FVCOM=$(boolify $USE_FVCOM)
+check_var_valid_value "USE_FVCOM" "valid_vals_BOOLEAN"
+USE_FVCOM=$(boolify "${USE_FVCOM}")
+
 check_var_valid_value "FVCOM_WCSTART" "valid_vals_FVCOM_WCSTART"
 FVCOM_WCSTART=$(echo_lowercase $FVCOM_WCSTART)
 #
@@ -461,7 +488,6 @@ The base directory in which the UPP source code should be located
 Please clone the external repository containing the code in this directory,
 build the executable, and then rerun the workflow."
 fi
-
 #
 # Define some other useful paths
 #
@@ -477,7 +503,6 @@ TEMPLATE_DIR="$USHDIR/templates"
 VX_CONFIG_DIR="$TEMPLATE_DIR/parm"
 METPLUS_CONF="$TEMPLATE_DIR/parm/metplus"
 MET_CONFIG="$TEMPLATE_DIR/parm/met"
-
 #
 #-----------------------------------------------------------------------
 #
@@ -515,24 +540,31 @@ One or more fix file directories have not been specified for this machine:
   FIXlut = \"${FIXlut:-\"\"}
   TOPO_DIR = \"${TOPO_DIR:-\"\"}
   SFC_CLIMO_INPUT_DIR = \"${SFC_CLIMO_INPUT_DIR:-\"\"}
-  FIXLAM_NCO_BASEDIR = \"${FIXLAM_NCO_BASEDIR:-\"\"}
+  DOMAIN_PREGEN_BASEDIR = \"${DOMAIN_PREGEN_BASEDIR:-\"\"}
 You can specify the missing location(s) in ${machine_file}"
 fi
-
-
 #
 #-----------------------------------------------------------------------
 #
-# Set the names of the build and workflow environment files (if not 
-# already specified by the user).  These are the files that need to be 
-# sourced before building the component SRW App codes and running various 
-# workflow scripts, respectively.
+# Make sure COMPILER is set to a valid value.
+#
+#-----------------------------------------------------------------------
+#
+COMPILER=$(echo_lowercase $COMPILER)
+check_var_valid_value "COMPILER" "valid_vals_COMPILER"
+#
+#-----------------------------------------------------------------------
+#
+# Set the names of the build and workflow module files (if not already 
+# specified by the user).  These are the files that need to be loaded 
+# before building the component SRW App codes and running various workflow 
+# scripts, respectively.
 #
 #-----------------------------------------------------------------------
 #
 machine=$(echo_lowercase ${MACHINE})
-WFLOW_ENV_FN=${WFLOW_ENV_FN:-"wflow_${machine}.env"}
-BUILD_ENV_FN=${BUILD_ENV_FN:-"build_${machine}_${COMPILER}.env"}
+WFLOW_MOD_FN=${WFLOW_MOD_FN:-"wflow_${machine}"}
+BUILD_MOD_FN=${BUILD_MOD_FN:-"build_${machine}_${COMPILER}"}
 #
 #-----------------------------------------------------------------------
 #
@@ -547,7 +579,7 @@ PPN_RUN_FCST=${PPN_RUN_FCST:-${ppn_run_fcst_default}}
 #
 #-----------------------------------------------------------------------
 #
-# Make sure that the job scheduler set above is valid.
+# Make sure SCHED is set to a valid value.
 #
 #-----------------------------------------------------------------------
 #
@@ -634,12 +666,8 @@ check_var_valid_value \
 #
 #-----------------------------------------------------------------------
 #
-check_var_valid_value "USE_MERRA_CLIMO" "valid_vals_USE_MERRA_CLIMO"
-#
-# Set USE_MERRA_CLIMO to either "TRUE" or "FALSE" so we don't
-# have to consider other valid values later on.
-#
-USE_MERRA_CLIMO=$(boolify $USE_MERRA_CLIMO)
+check_var_valid_value "USE_MERRA_CLIMO" "valid_vals_BOOLEAN"
+USE_MERRA_CLIMO=$(boolify "${USE_MERRA_CLIMO}")
 # Force to "TRUE" in case of FV3_GFS_v15_thompson_mynn_lam3km:
 if [ "${CCPP_PHYS_SUITE}" = "FV3_GFS_v15_thompson_mynn_lam3km" ]; then
   USE_MERRA_CLIMO="TRUE"
@@ -814,6 +842,9 @@ fi
 #
 #-----------------------------------------------------------------------
 #
+check_var_valid_value "USE_CUSTOM_POST_CONFIG_FILE" "valid_vals_BOOLEAN"
+USE_CUSTOM_POST_CONFIG_FILE=$(boolify "${USE_CUSTOM_POST_CONFIG_FILE}")
+
 if [ ${USE_CUSTOM_POST_CONFIG_FILE} = "TRUE" ]; then
   if [ ! -f "${CUSTOM_POST_CONFIG_FP}" ]; then
     print_err_msg_exit "
@@ -825,12 +856,16 @@ fi
 #
 #-----------------------------------------------------------------------
 #
-# If using external CRTM fix files to allow post-processing of synthetic
-# satellite products from the UPP, then make sure the fix file directory
-# exists.
+# Ensure that USE_CRTM is set to a valid value.  Then, if it is set to 
+# "TRUE" (i.e. if using external CRTM fix files to allow post-processing 
+# of synthetic satellite products from the UPP, make sure that the fix 
+# file directory exists.
 #
 #-----------------------------------------------------------------------
 #
+check_var_valid_value "USE_CRTM" "valid_vals_BOOLEAN"
+USE_CRTM=$(boolify "${USE_CRTM}")
+
 if [ ${USE_CRTM} = "TRUE" ]; then
   if [ ! -d "${CRTM_DIR}" ]; then
     print_err_msg_exit "
@@ -889,13 +924,62 @@ LBC_SPEC_FCST_HRS=($( seq ${LBC_SPEC_INTVL_HRS} ${LBC_SPEC_INTVL_HRS} \
 #
 #-----------------------------------------------------------------------
 #
-# If PREDEF_GRID_NAME is set to a non-empty string, set or reset parameters
-# according to the predefined domain specified.
+# If PREDEF_GRID_NAME is set to a non-empty string, set or reset native
+# and write-component grid parameters according to the specified predefined 
+# domain.
 #
 #-----------------------------------------------------------------------
 #
 if [ ! -z "${PREDEF_GRID_NAME}" ]; then
-  . $USHDIR/set_predef_grid_params.sh
+
+  set_predef_grid_params \
+    predef_grid_name="${PREDEF_GRID_NAME}" \
+    dt_atmos="${DT_ATMOS}" \
+    layout_x="${LAYOUT_X}" \
+    layout_y="${LAYOUT_Y}" \
+    blocksize="${BLOCKSIZE}" \
+    quilting="${QUILTING}" \
+    outvarname_grid_gen_method="GRID_GEN_METHOD" \
+    outvarname_esggrid_lon_ctr="ESGgrid_LON_CTR" \
+    outvarname_esggrid_lat_ctr="ESGgrid_LAT_CTR" \
+    outvarname_esggrid_delx="ESGgrid_DELX" \
+    outvarname_esggrid_dely="ESGgrid_DELY" \
+    outvarname_esggrid_nx="ESGgrid_NX" \
+    outvarname_esggrid_ny="ESGgrid_NY" \
+    outvarname_esggrid_pazi="ESGgrid_PAZI" \
+    outvarname_esggrid_wide_halo_width="ESGgrid_WIDE_HALO_WIDTH" \
+    outvarname_gfdlgrid_lon_t6_ctr="GFDLgrid_LON_T6_CTR" \
+    outvarname_gfdlgrid_lat_t6_ctr="GFDLgrid_LAT_T6_CTR" \
+    outvarname_gfdlgrid_stretch_fac="GFDLgrid_STRETCH_FAC" \
+    outvarname_gfdlgrid_num_cells="GFDLgrid_NUM_CELLS" \
+    outvarname_gfdlgrid_refine_ratio="GFDLgrid_REFINE_RATIO" \
+    outvarname_gfdlgrid_istart_of_rgnl_dom_on_t6g="GFDLgrid_ISTART_OF_RGNL_DOM_ON_T6G" \
+    outvarname_gfdlgrid_iend_of_rgnl_dom_on_t6g="GFDLgrid_IEND_OF_RGNL_DOM_ON_T6G" \
+    outvarname_gfdlgrid_jstart_of_rgnl_dom_on_t6g="GFDLgrid_JSTART_OF_RGNL_DOM_ON_T6G" \
+    outvarname_gfdlgrid_jend_of_rgnl_dom_on_t6g="GFDLgrid_JEND_OF_RGNL_DOM_ON_T6G" \
+    outvarname_gfdlgrid_use_num_cells_in_filenames="GFDLgrid_USE_NUM_CELLS_IN_FILENAMES" \
+    outvarname_dt_atmos="DT_ATMOS" \
+    outvarname_layout_x="LAYOUT_X" \
+    outvarname_layout_y="LAYOUT_Y" \
+    outvarname_blocksize="BLOCKSIZE" \
+    outvarname_wrtcmp_write_groups="WRTCMP_write_groups" \
+    outvarname_wrtcmp_write_tasks_per_group="WRTCMP_write_tasks_per_group" \
+    outvarname_wrtcmp_output_grid="WRTCMP_output_grid" \
+    outvarname_wrtcmp_cen_lon="WRTCMP_cen_lon" \
+    outvarname_wrtcmp_cen_lat="WRTCMP_cen_lat" \
+    outvarname_wrtcmp_stdlat1="WRTCMP_stdlat1" \
+    outvarname_wrtcmp_stdlat2="WRTCMP_stdlat2" \
+    outvarname_wrtcmp_nx="WRTCMP_nx" \
+    outvarname_wrtcmp_ny="WRTCMP_ny" \
+    outvarname_wrtcmp_lon_lwr_left="WRTCMP_lon_lwr_left" \
+    outvarname_wrtcmp_lat_lwr_left="WRTCMP_lat_lwr_left" \
+    outvarname_wrtcmp_lon_upr_rght="WRTCMP_lon_upr_rght" \
+    outvarname_wrtcmp_lat_upr_rght="WRTCMP_lat_upr_rght" \
+    outvarname_wrtcmp_dx="WRTCMP_dx" \
+    outvarname_wrtcmp_dy="WRTCMP_dy" \
+    outvarname_wrtcmp_dlon="WRTCMP_dlon" \
+    outvarname_wrtcmp_dlat="WRTCMP_dlat"
+
 fi
 #
 #-----------------------------------------------------------------------
@@ -913,17 +997,17 @@ check_var_valid_value \
 #
 #-----------------------------------------------------------------------
 #
-# For a "GFDLgrid" type of grid, make sure GFDLgrid_RES is set to a valid
-# value.
+# For a "GFDLgrid" type of grid, make sure GFDLgrid_NUM_CELLS is set to 
+# a valid value.
 #
 #-----------------------------------------------------------------------
 #
 if [ "${GRID_GEN_METHOD}" = "GFDLgrid" ]; then
   err_msg="\
 The number of grid cells per tile in each horizontal direction specified
-in GFDLgrid_RES is not supported:
-  GFDLgrid_RES = \"${GFDLgrid_RES}\""
-  check_var_valid_value "GFDLgrid_RES" "valid_vals_GFDLgrid_RES" "${err_msg}"
+in GFDLgrid_NUM_CELLS is not supported:
+  GFDLgrid_NUM_CELLS = \"${GFDLgrid_NUM_CELLS}\""
+  check_var_valid_value "GFDLgrid_NUM_CELLS" "valid_vals_GFDLgrid_NUM_CELLS" "${err_msg}"
 fi
 #
 #-----------------------------------------------------------------------
@@ -982,6 +1066,9 @@ fi
 #
 #-----------------------------------------------------------------------
 #
+check_var_valid_value "SUB_HOURLY_POST" "valid_vals_BOOLEAN"
+SUB_HOURLY_POST=$(boolify "${SUB_HOURLY_POST}")
+
 if [ "${SUB_HOURLY_POST}" = "TRUE" ]; then
 #
 # Check that DT_SUBHOURLY_POST_MNTS is a string consisting of one or two
@@ -1141,7 +1228,7 @@ check_for_preexist_dir_file "$EXPTDIR" "${PREEXISTING_DIR_METHOD}"
 # is not placed directly under COMROOT but several directories further
 # down.  More specifically, for a cycle starting at yyyymmddhh, it is at
 #
-#   $COMROOT/$NET/$envir/$RUN.$yyyymmdd/$hh
+#   $COMROOT/$NET/$model_ver/$RUN.$yyyymmdd/$hh
 #
 # Below, we set COMROOT in terms of PTMP as COMROOT="$PTMP/com".  COMOROOT 
 # is not used by the workflow in community mode.
@@ -1151,7 +1238,7 @@ check_for_preexist_dir_file "$EXPTDIR" "${PREEXISTING_DIR_METHOD}"
 # from the RUN_POST_TN task will be placed, i.e. it is the cycle-independent 
 # portion of the RUN_POST_TN task's output directory.  It is given by
 #
-#   $COMROOT/$NET/$envir
+#   $COMROOT/$NET/$model_ver
 #
 # COMOUT_BASEDIR is not used by the workflow in community mode.
 #
@@ -1164,19 +1251,38 @@ FIXclim="${EXPTDIR}/fix_clim"
 FIXLAM="${EXPTDIR}/fix_lam"
 
 if [ "${RUN_ENVIR}" = "nco" ]; then
-
-  CYCLE_BASEDIR="$STMP/tmpnwprd/$RUN"
+  CYCLE_BASEDIR="${STMP}/tmpnwprd/${RUN}"
   check_for_preexist_dir_file "${CYCLE_BASEDIR}" "${PREEXISTING_DIR_METHOD}"
-  COMROOT="$PTMP/com"
-  COMOUT_BASEDIR="$COMROOT/$NET/$envir"
+  COMROOT="${PTMP}/com"
+  COMOUT_BASEDIR="${COMROOT}/${NET}/${model_ver}"
   check_for_preexist_dir_file "${COMOUT_BASEDIR}" "${PREEXISTING_DIR_METHOD}"
-
 else
-
   CYCLE_BASEDIR="$EXPTDIR"
   COMROOT=""
   COMOUT_BASEDIR=""
+fi
+#
+#-----------------------------------------------------------------------
+#
+#
+# If POST_OUTPUT_DOMAIN_NAME has not been specified by the user, set it
+# to PREDEF_GRID_NAME (which won't be empty if using a predefined grid).
+# Then change it to lowercase.  Finally, ensure that it does not end up 
+# getting set to an empty string.
+#
+#-----------------------------------------------------------------------
+#
+POST_OUTPUT_DOMAIN_NAME="${POST_OUTPUT_DOMAIN_NAME:-${PREDEF_GRID_NAME}}"
+POST_OUTPUT_DOMAIN_NAME=$(echo_lowercase ${POST_OUTPUT_DOMAIN_NAME})
 
+if [ -z "${POST_OUTPUT_DOMAIN_NAME}" ]; then
+  print_err_msg_exit "\
+The domain name used in naming the run_post output files (POST_OUTPUT_DOMAIN_NAME)
+has not been set:
+  POST_OUTPUT_DOMAIN_NAME = \"${POST_OUTPUT_DOMAIN_NAME}\"
+If this experiment is not using a predefined grid (i.e. if PREDEF_GRID_NAME 
+is set to a null string), POST_OUTPUT_DOMAIN_NAME must be set in the SRW 
+App's configuration file (\"${EXPT_CONFIG_FN}\")."
 fi
 #
 #-----------------------------------------------------------------------
@@ -1216,11 +1322,22 @@ fi
 #
 dot_ccpp_phys_suite_or_null=".${CCPP_PHYS_SUITE}"
 
-DATA_TABLE_TMPL_FN="${DATA_TABLE_FN}"
-DIAG_TABLE_TMPL_FN="${DIAG_TABLE_FN}${dot_ccpp_phys_suite_or_null}"
-FIELD_TABLE_TMPL_FN="${FIELD_TABLE_FN}${dot_ccpp_phys_suite_or_null}"
-MODEL_CONFIG_TMPL_FN="${MODEL_CONFIG_FN}"
-NEMS_CONFIG_TMPL_FN="${NEMS_CONFIG_FN}"
+# Names of input files that the forecast model (ufs-weather-model) expects 
+# to read in.  These should only be changed if the input file names in the 
+# forecast model code are changed.
+#----------------------------------
+DATA_TABLE_FN="data_table"
+DIAG_TABLE_FN="diag_table"
+FIELD_TABLE_FN="field_table"
+MODEL_CONFIG_FN="model_configure"
+NEMS_CONFIG_FN="nems.configure"
+#----------------------------------
+
+DATA_TABLE_TMPL_FN="${DATA_TABLE_TMPL_FN:-${DATA_TABLE_FN}}"
+DIAG_TABLE_TMPL_FN="${DIAG_TABLE_TMPL_FN:-${DIAG_TABLE_FN}}${dot_ccpp_phys_suite_or_null}"
+FIELD_TABLE_TMPL_FN="${FIELD_TABLE_TMPL_FN:-${FIELD_TABLE_FN}}${dot_ccpp_phys_suite_or_null}"
+MODEL_CONFIG_TMPL_FN="${MODEL_CONFIG_TMPL_FN:-${MODEL_CONFIG_FN}}"
+NEMS_CONFIG_TMPL_FN="${NEMS_CONFIG_TMPL_FN:-${NEMS_CONFIG_FN}}"
 
 DATA_TABLE_TMPL_FP="${TEMPLATE_DIR}/${DATA_TABLE_TMPL_FN}"
 DIAG_TABLE_TMPL_FP="${TEMPLATE_DIR}/${DIAG_TABLE_TMPL_FN}"
@@ -1329,11 +1446,6 @@ FIELD_TABLE_FP="${EXPTDIR}/${FIELD_TABLE_FN}"
 FV3_NML_FN="${FV3_NML_BASE_SUITE_FN%.*}"
 FV3_NML_FP="${EXPTDIR}/${FV3_NML_FN}"
 NEMS_CONFIG_FP="${EXPTDIR}/${NEMS_CONFIG_FN}"
-
-
-check_var_valid_value "USE_USER_STAGED_EXTRN_FILES" "valid_vals_USE_USER_STAGED_EXTRN_FILES"
-USE_USER_STAGED_EXTRN_FILES=$(boolify $USE_USER_STAGED_EXTRN_FILES)
-
 #
 #-----------------------------------------------------------------------
 #
@@ -1343,16 +1455,20 @@ USE_USER_STAGED_EXTRN_FILES=$(boolify $USE_USER_STAGED_EXTRN_FILES)
 #
 #-----------------------------------------------------------------------
 #
+check_var_valid_value "USE_USER_STAGED_EXTRN_FILES" "valid_vals_BOOLEAN"
+USE_USER_STAGED_EXTRN_FILES=$(boolify "${USE_USER_STAGED_EXTRN_FILES}")
+
 if [ "${USE_USER_STAGED_EXTRN_FILES}" = "TRUE" ]; then
 
-  if [ ! -d "${EXTRN_MDL_SOURCE_BASEDIR_ICS}" ]; then
+  # Check for the base directory up to the first templated field.
+  if [ ! -d "$(dirname ${EXTRN_MDL_SOURCE_BASEDIR_ICS%%\$*})" ]; then
     print_err_msg_exit "\
 The directory (EXTRN_MDL_SOURCE_BASEDIR_ICS) in which the user-staged 
 external model files for generating ICs should be located does not exist:
   EXTRN_MDL_SOURCE_BASEDIR_ICS = \"${EXTRN_MDL_SOURCE_BASEDIR_ICS}\""
   fi
 
-  if [ ! -d "${EXTRN_MDL_SOURCE_BASEDIR_LBCS}" ]; then
+  if [ ! -d "$(dirname ${EXTRN_MDL_SOURCE_BASEDIR_LBCS%%\$*})" ]; then
     print_err_msg_exit "\
 The directory (EXTRN_MDL_SOURCE_BASEDIR_LBCS) in which the user-staged 
 external model files for generating LBCs should be located does not exist:
@@ -1360,6 +1476,9 @@ external model files for generating LBCs should be located does not exist:
   fi
 
 fi
+
+check_var_valid_value "NOMADS" "valid_vals_BOOLEAN"
+NOMADS=$(boolify "${NOMADS}")
 #
 #-----------------------------------------------------------------------
 #
@@ -1370,8 +1489,8 @@ fi
 #
 #-----------------------------------------------------------------------
 #
-check_var_valid_value "DO_ENSEMBLE" "valid_vals_DO_ENSEMBLE"
-DO_ENSEMBLE=$(boolify $DO_ENSEMBLE)
+check_var_valid_value "DO_ENSEMBLE" "valid_vals_BOOLEAN"
+DO_ENSEMBLE=$(boolify "${DO_ENSEMBLE}")
 
 NDIGITS_ENSMEM_NAMES="0"
 ENSMEM_NAMES=("")
@@ -1389,6 +1508,21 @@ if [ "${DO_ENSEMBLE}" = "TRUE" ]; then
     ENSMEM_NAMES[$i]="mem${ip1}"
     FV3_NML_ENSMEM_FPS[$i]="$EXPTDIR/${FV3_NML_FN}_${ENSMEM_NAMES[$i]}"
   done
+fi
+#
+#-----------------------------------------------------------------------
+#
+# Make sure that DO_ENSEMBLE is set to TRUE when running ensemble vx.
+#
+#-----------------------------------------------------------------------
+#
+if [ "${DO_ENSEMBLE}" = "FALSE" ] && [ "${RUN_TASK_VX_ENSGRID}" = "TRUE" -o \
+   "${RUN_TASK_VX_ENSPOINT}" = "TRUE" ]; then
+  print_err_msg_exit "\
+Ensemble verification can not be run unless running in ensemble mode:
+   DO_ENSEMBLE = \"${DO_ENSEMBLE}\"
+   RUN_TASK_VX_ENSGRID = \"${RUN_TASK_VX_ENSGRID}\"
+   RUN_TASK_VX_ENSPOINT = \"${RUN_TASK_VX_ENSPOINT}\""
 fi
 #
 #-----------------------------------------------------------------------
@@ -1452,7 +1586,7 @@ LOAD_MODULES_RUN_TASK_FP="$USHDIR/load_modules_run_task.sh"
 #
 if [ "${RUN_ENVIR}" = "nco" ]; then
 
-  nco_fix_dir="${FIXLAM_NCO_BASEDIR}/${PREDEF_GRID_NAME}"
+  nco_fix_dir="${DOMAIN_PREGEN_BASEDIR}/${PREDEF_GRID_NAME}"
   if [ ! -d "${nco_fix_dir}" ]; then
     print_err_msg_exit "\
 The directory (nco_fix_dir) that should contain the pregenerated grid,
@@ -1468,11 +1602,11 @@ orography, and surface climatology files does not exist:
 When RUN_ENVIR is set to \"nco\", the workflow assumes that pregenerated
 grid files already exist in the directory 
 
-  \${FIXLAM_NCO_BASEDIR}/\${PREDEF_GRID_NAME}
+  \${DOMAIN_PREGEN_BASEDIR}/\${PREDEF_GRID_NAME}
 
 where
 
-  FIXLAM_NCO_BASEDIR = \"${FIXLAM_NCO_BASEDIR}\"
+  DOMAIN_PREGEN_BASEDIR = \"${DOMAIN_PREGEN_BASEDIR}\"
   PREDEF_GRID_NAME = \"${PREDEF_GRID_NAME}\"
 
 Thus, the MAKE_GRID_TN task must not be run (i.e. RUN_TASK_MAKE_GRID must 
@@ -1506,11 +1640,11 @@ Reset values are:
     msg="
 When RUN_ENVIR is set to \"nco\", the workflow assumes that pregenerated
 orography files already exist in the directory 
-  \${FIXLAM_NCO_BASEDIR}/\${PREDEF_GRID_NAME}
+  \${DOMAIN_PREGEN_BASEDIR}/\${PREDEF_GRID_NAME}
 
 where
 
-  FIXLAM_NCO_BASEDIR = \"${FIXLAM_NCO_BASEDIR}\"
+  DOMAIN_PREGEN_BASEDIR = \"${DOMAIN_PREGEN_BASEDIR}\"
   PREDEF_GRID_NAME = \"${PREDEF_GRID_NAME}\"
 
 Thus, the MAKE_OROG_TN task must not be run (i.e. RUN_TASK_MAKE_OROG must 
@@ -1545,11 +1679,11 @@ Reset values are:
 When RUN_ENVIR is set to \"nco\", the workflow assumes that pregenerated
 surface climatology files already exist in the directory 
 
-  \${FIXLAM_NCO_BASEDIR}/\${PREDEF_GRID_NAME}
+  \${DOMAIN_PREGEN_BASEDIR}/\${PREDEF_GRID_NAME}
 
 where
 
-  FIXLAM_NCO_BASEDIR = \"${FIXLAM_NCO_BASEDIR}\"
+  DOMAIN_PREGEN_BASEDIR = \"${DOMAIN_PREGEN_BASEDIR}\"
   PREDEF_GRID_NAME = \"${PREDEF_GRID_NAME}\"
 
 Thus, the MAKE_SFC_CLIMO_TN task must not be run (i.e. RUN_TASK_MAKE_SFC_CLIMO 
@@ -1576,8 +1710,7 @@ one above.  Reset values are:
 
   fi
 
-  if [ "${RUN_TASK_VX_GRIDSTAT}" = "TRUE" ] || \
-     [ "${RUN_TASK_VX_GRIDSTAT}" = "FALSE" ]; then
+  if [ "${RUN_TASK_VX_GRIDSTAT}" = "TRUE" ]; then
 
     msg="
 When RUN_ENVIR is set to \"nco\", it is assumed that the verification
@@ -1596,8 +1729,7 @@ Reset value is:"
 
   fi
 
-  if [ "${RUN_TASK_VX_POINTSTAT}" = "TRUE" ] || \
-     [ "${RUN_TASK_VX_POINTSTAT}" = "FALSE" ]; then
+  if [ "${RUN_TASK_VX_POINTSTAT}" = "TRUE" ]; then
 
     msg="
 When RUN_ENVIR is set to \"nco\", it is assumed that the verification
@@ -1616,8 +1748,7 @@ Reset value is:"
 
   fi
 
-  if [ "${RUN_TASK_VX_ENSGRID}" = "TRUE" ] || \
-     [ "${RUN_TASK_VX_ENSGRID}" = "FALSE" ]; then
+  if [ "${RUN_TASK_VX_ENSGRID}" = "TRUE" ]; then
 
     msg="
 When RUN_ENVIR is set to \"nco\", it is assumed that the verification
@@ -1761,45 +1892,6 @@ fi
 #
 #-----------------------------------------------------------------------
 #
-# Any regional model must be supplied lateral boundary conditions (in
-# addition to initial conditions) to be able to perform a forecast.  In
-# the FV3-LAM model, these boundary conditions (BCs) are supplied using a
-# "halo" of grid cells around the regional domain that extend beyond the
-# boundary of the domain.  The model is formulated such that along with
-# files containing these BCs, it needs as input the following files (in
-# NetCDF format):
-#
-# 1) A grid file that includes a halo of 3 cells beyond the boundary of
-#    the domain.
-# 2) A grid file that includes a halo of 4 cells beyond the boundary of
-#    the domain.
-# 3) A (filtered) orography file without a halo, i.e. a halo of width
-#    0 cells.
-# 4) A (filtered) orography file that includes a halo of 4 cells beyond
-#    the boundary of the domain.
-#
-# Note that the regional grid is referred to as "tile 7" in the code.
-# We will let:
-#
-# * NH0 denote the width (in units of number of cells on tile 7) of
-#   the 0-cell-wide halo, i.e. NH0 = 0;
-#
-# * NH3 denote the width (in units of number of cells on tile 7) of
-#   the 3-cell-wide halo, i.e. NH3 = 3; and
-#
-# * NH4 denote the width (in units of number of cells on tile 7) of
-#   the 4-cell-wide halo, i.e. NH4 = 4.
-#
-# We define these variables next.
-#
-#-----------------------------------------------------------------------
-#
-NH0=0
-NH3=3
-NH4=4
-#
-#-----------------------------------------------------------------------
-#
 # Set parameters according to the type of horizontal grid generation 
 # method specified.  First consider GFDL's global-parent-grid based 
 # method.
@@ -1811,23 +1903,24 @@ if [ "${GRID_GEN_METHOD}" = "GFDLgrid" ]; then
   set_gridparams_GFDLgrid \
     lon_of_t6_ctr="${GFDLgrid_LON_T6_CTR}" \
     lat_of_t6_ctr="${GFDLgrid_LAT_T6_CTR}" \
-    res_of_t6g="${GFDLgrid_RES}" \
+    res_of_t6g="${GFDLgrid_NUM_CELLS}" \
     stretch_factor="${GFDLgrid_STRETCH_FAC}" \
     refine_ratio_t6g_to_t7g="${GFDLgrid_REFINE_RATIO}" \
     istart_of_t7_on_t6g="${GFDLgrid_ISTART_OF_RGNL_DOM_ON_T6G}" \
     iend_of_t7_on_t6g="${GFDLgrid_IEND_OF_RGNL_DOM_ON_T6G}" \
     jstart_of_t7_on_t6g="${GFDLgrid_JSTART_OF_RGNL_DOM_ON_T6G}" \
     jend_of_t7_on_t6g="${GFDLgrid_JEND_OF_RGNL_DOM_ON_T6G}" \
-    output_varname_lon_of_t7_ctr="LON_CTR" \
-    output_varname_lat_of_t7_ctr="LAT_CTR" \
-    output_varname_nx_of_t7_on_t7g="NX" \
-    output_varname_ny_of_t7_on_t7g="NY" \
-    output_varname_halo_width_on_t7g="NHW" \
-    output_varname_stretch_factor="STRETCH_FAC" \
-    output_varname_istart_of_t7_with_halo_on_t6sg="ISTART_OF_RGNL_DOM_WITH_WIDE_HALO_ON_T6SG" \
-    output_varname_iend_of_t7_with_halo_on_t6sg="IEND_OF_RGNL_DOM_WITH_WIDE_HALO_ON_T6SG" \
-    output_varname_jstart_of_t7_with_halo_on_t6sg="JSTART_OF_RGNL_DOM_WITH_WIDE_HALO_ON_T6SG" \
-    output_varname_jend_of_t7_with_halo_on_t6sg="JEND_OF_RGNL_DOM_WITH_WIDE_HALO_ON_T6SG"
+    verbose="${VERBOSE}" \
+    outvarname_lon_of_t7_ctr="LON_CTR" \
+    outvarname_lat_of_t7_ctr="LAT_CTR" \
+    outvarname_nx_of_t7_on_t7g="NX" \
+    outvarname_ny_of_t7_on_t7g="NY" \
+    outvarname_halo_width_on_t7g="NHW" \
+    outvarname_stretch_factor="STRETCH_FAC" \
+    outvarname_istart_of_t7_with_halo_on_t6sg="ISTART_OF_RGNL_DOM_WITH_WIDE_HALO_ON_T6SG" \
+    outvarname_iend_of_t7_with_halo_on_t6sg="IEND_OF_RGNL_DOM_WITH_WIDE_HALO_ON_T6SG" \
+    outvarname_jstart_of_t7_with_halo_on_t6sg="JSTART_OF_RGNL_DOM_WITH_WIDE_HALO_ON_T6SG" \
+    outvarname_jend_of_t7_with_halo_on_t6sg="JEND_OF_RGNL_DOM_WITH_WIDE_HALO_ON_T6SG"
 #
 #-----------------------------------------------------------------------
 #
@@ -1846,17 +1939,17 @@ elif [ "${GRID_GEN_METHOD}" = "ESGgrid" ]; then
     halo_width="${ESGgrid_WIDE_HALO_WIDTH}" \
     delx="${ESGgrid_DELX}" \
     dely="${ESGgrid_DELY}" \
-    output_varname_lon_ctr="LON_CTR" \
-    output_varname_lat_ctr="LAT_CTR" \
-    output_varname_nx="NX" \
-    output_varname_ny="NY" \
-    output_varname_pazi="PAZI" \
-    output_varname_halo_width="NHW" \
-    output_varname_stretch_factor="STRETCH_FAC" \
-    output_varname_del_angle_x_sg="DEL_ANGLE_X_SG" \
-    output_varname_del_angle_y_sg="DEL_ANGLE_Y_SG" \
-    output_varname_neg_nx_of_dom_with_wide_halo="NEG_NX_OF_DOM_WITH_WIDE_HALO" \
-    output_varname_neg_ny_of_dom_with_wide_halo="NEG_NY_OF_DOM_WITH_WIDE_HALO"
+    outvarname_lon_ctr="LON_CTR" \
+    outvarname_lat_ctr="LAT_CTR" \
+    outvarname_nx="NX" \
+    outvarname_ny="NY" \
+    outvarname_pazi="PAZI" \
+    outvarname_halo_width="NHW" \
+    outvarname_stretch_factor="STRETCH_FAC" \
+    outvarname_del_angle_x_sg="DEL_ANGLE_X_SG" \
+    outvarname_del_angle_y_sg="DEL_ANGLE_Y_SG" \
+    outvarname_neg_nx_of_dom_with_wide_halo="NEG_NX_OF_DOM_WITH_WIDE_HALO" \
+    outvarname_neg_ny_of_dom_with_wide_halo="NEG_NY_OF_DOM_WITH_WIDE_HALO"
 
 fi
 #
@@ -1992,12 +2085,8 @@ fi
 #
 #-----------------------------------------------------------------------
 #
-check_var_valid_value "WRITE_DOPOST" "valid_vals_WRITE_DOPOST"
-#
-# Set WRITE_DOPOST to either "TRUE" or "FALSE" so we don't have to consider
-# other valid values later on.
-#
-WRITE_DOPOST=$(boolify $WRITE_DOPOST)
+check_var_valid_value "WRITE_DOPOST" "valid_vals_BOOLEAN"
+WRITE_DOPOST=$(boolify "${WRITE_DOPOST}")
 
 if [ "$WRITE_DOPOST" = "TRUE" ] ; then
 
@@ -2011,12 +2100,11 @@ SUB_HOURLY_POST is NOT available with Inline Post yet."
   fi
 fi
 
+check_var_valid_value "QUILTING" "valid_vals_BOOLEAN"
+QUILTING=$(boolify "$QUILTING")
 
-check_var_valid_value "QUILTING" "valid_vals_QUILTING"
-QUILTING=$(boolify $QUILTING)
-
-check_var_valid_value "PRINT_ESMF" "valid_vals_PRINT_ESMF"
-PRINT_ESMF=$(boolify $PRINT_ESMF)
+check_var_valid_value "PRINT_ESMF" "valid_vals_BOOLEAN"
+PRINT_ESMF=$(boolify "${PRINT_ESMF}")
 
 #
 #-----------------------------------------------------------------------
@@ -2132,6 +2220,27 @@ GLOBAL_VAR_DEFNS_FP="$EXPTDIR/${GLOBAL_VAR_DEFNS_FN}"
 #
 #-----------------------------------------------------------------------
 #
+# Get the list of constants and their values.  The result is saved in
+# the variable "constant_defns".  This will be written to the experiment's
+# variable defintions file later below.
+#
+#-----------------------------------------------------------------------
+#
+print_info_msg "
+Creating list of constants..." 
+
+get_bash_file_contents fp="$USHDIR/${CONSTANTS_FN}" \
+                       outvarname_contents="constant_defns"
+
+print_info_msg "$DEBUG" "
+The variable \"constant_defns\" containing definitions of various 
+constants is set as follows:
+
+${constant_defns}
+"
+#
+#-----------------------------------------------------------------------
+#
 # Get the list of primary experiment variables and their default values 
 # from the default experiment configuration file (EXPT_DEFAULT_CONFIG_FN).  
 # By "primary", we mean those variables that are defined in the default 
@@ -2141,13 +2250,12 @@ GLOBAL_VAR_DEFNS_FP="$EXPTDIR/${GLOBAL_VAR_DEFNS_FN}"
 # variable definitions file.
 #
 #-----------------------------------------------------------------------
-
 #
 print_info_msg "
 Creating list of default experiment variable definitions..." 
 
 get_bash_file_contents fp="$USHDIR/${EXPT_DEFAULT_CONFIG_FN}" \
-                       output_varname_contents="default_var_defns"
+                       outvarname_contents="default_var_defns"
 
 print_info_msg "$DEBUG" "
 The variable \"default_var_defns\" containing default values of primary 
@@ -2261,9 +2369,9 @@ var_name = \"${var_name}\""
       else
 
         var_value=""
-        printf -v "var_value" "${escbksl_nl_or_null}"
+        printf -v "var_value" "%s${escbksl_nl_or_null}" ""
         for (( i=0; i<${num_elems}; i++ )); do
-          printf -v "var_value" "${var_value}\"${array[$i]}\" ${escbksl_nl_or_null}"
+          printf -v "var_value" "%s${escbksl_nl_or_null}" "${var_value}\"${array[$i]}\" "
         done
         rhs="( ${var_value})"
 
@@ -2290,7 +2398,7 @@ Setting its value in the variable definitions file to an empty string."
 # to the list of all variable definitions.
 #
     var_defn="${var_name}=$rhs"
-    printf -v "var_defns" "${var_defns}${var_defn}\n"
+    printf -v "var_defns" "%s\n" "${var_defns}${var_defn}"
 #
 # If var_name is empty, then a variable name was not found on the current 
 # line in default_var_defns.  In this case, print out a warning and move 
@@ -2333,6 +2441,16 @@ var_defns_file_contents="\
 #-----------------------------------------------------------------------
 #-----------------------------------------------------------------------
 # Section 1:
+# This section contains definitions of the various constants defined in
+# the file ${CONSTANTS_FN}.
+#-----------------------------------------------------------------------
+#-----------------------------------------------------------------------
+#
+${constant_defns}
+#
+#-----------------------------------------------------------------------
+#-----------------------------------------------------------------------
+# Section 2:
 # This section contains (most of) the primary experiment variables, i.e. 
 # those variables that are defined in the default configuration file 
 # (${EXPT_DEFAULT_CONFIG_FN}) and that can be reset via the user-specified 
@@ -2355,7 +2473,7 @@ var_defns_file_contents=${var_defns_file_contents}"\
 #
 #-----------------------------------------------------------------------
 #-----------------------------------------------------------------------
-# Section 2:
+# Section 3:
 # This section defines variables that have been derived from the primary
 # set of experiment variables above (we refer to these as \"derived\" or
 # \"secondary\" variables).
@@ -2429,6 +2547,12 @@ FV3_NML_ENSMEM_FPS=${fv3_nml_ensmem_fps_str}
 #
 GLOBAL_VAR_DEFNS_FP='${GLOBAL_VAR_DEFNS_FP}'
 
+DATA_TABLE_FN='${DATA_TABLE_FN}'
+DIAG_TABLE_FN='${DIAG_TABLE_FN}'
+FIELD_TABLE_FN='${FIELD_TABLE_FN}'
+MODEL_CONFIG_FN='${MODEL_CONFIG_FN}'
+NEMS_CONFIG_FN='${NEMS_CONFIG_FN}'
+
 DATA_TABLE_TMPL_FN='${DATA_TABLE_TMPL_FN}'
 DIAG_TABLE_TMPL_FN='${DIAG_TABLE_TMPL_FN}'
 FIELD_TABLE_TMPL_FN='${FIELD_TABLE_TMPL_FN}'
@@ -2492,9 +2616,6 @@ SDF_USES_THOMPSON_MP='${SDF_USES_THOMPSON_MP}'
 #
 GTYPE='$GTYPE'
 TILE_RGNL='${TILE_RGNL}'
-NH0='${NH0}'
-NH3='${NH3}'
-NH4='${NH4}'
 
 LON_CTR='${LON_CTR}'
 LAT_CTR='${LAT_CTR}'
@@ -2689,6 +2810,7 @@ PE_MEMBER01='${PE_MEMBER01}'
 N_VAR_SPP='${N_VAR_SPP}'
 N_VAR_LNDP='${N_VAR_LNDP}'
 LNDP_TYPE='${LNDP_TYPE}'
+LNDP_MODEL_TYPE='${LNDP_MODEL_TYPE}'
 FHCYC_LSM_SPP_OR_NOT='${FHCYC_LSM_SPP_OR_NOT}'
 "
 #

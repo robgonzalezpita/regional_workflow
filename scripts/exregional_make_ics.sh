@@ -111,7 +111,7 @@ fi
 #-----------------------------------------------------------------------
 #
 extrn_mdl_staging_dir="${CYCLE_DIR}/${EXTRN_MDL_NAME_ICS}/for_ICS"
-extrn_mdl_var_defns_fp="${extrn_mdl_staging_dir}/${EXTRN_MDL_ICS_VAR_DEFNS_FN}"
+extrn_mdl_var_defns_fp="${extrn_mdl_staging_dir}/${EXTRN_MDL_VAR_DEFNS_FN}"
 . ${extrn_mdl_var_defns_fp}
 #
 #-----------------------------------------------------------------------
@@ -142,7 +142,6 @@ case "${CCPP_PHYS_SUITE}" in
     varmap_file="GFSphys_var_map.txt"
     ;;
 #
-  "FV3_RRFS_v1alpha" | \
   "FV3_RRFS_v1beta" | \
   "FV3_GFS_v15_thompson_mynn_lam3km" | \
   "FV3_HRRR" )
@@ -437,7 +436,7 @@ case "${EXTRN_MDL_NAME_ICS}" in
 #
   geogrid_file_input_grid="${FIXgsm}/geo_em.d01.nc_RAPX"
   vgtyp_from_climo=True
-  sotyp_from_climo=False
+  sotyp_from_climo=True
   vgfrc_from_climo=True
   minmax_vgfrc_from_climo=True
   lai_from_climo=True
@@ -518,7 +517,6 @@ fi
 #
 settings="
 'config': {
- 'fix_dir_input_grid': ${FIXgsm},
  'fix_dir_target_grid': ${FIXLAM},
  'mosaic_file_target_grid': ${FIXLAM}/${CRES}${DOT_OR_USCORE}mosaic.halo$((10#${NH4})).nc,
  'orog_dir_target_grid': ${FIXLAM},

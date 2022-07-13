@@ -109,7 +109,7 @@ fi
 #-----------------------------------------------------------------------
 #
 extrn_mdl_staging_dir="${CYCLE_DIR}/${EXTRN_MDL_NAME_LBCS}/for_LBCS"
-extrn_mdl_var_defns_fp="${extrn_mdl_staging_dir}/${EXTRN_MDL_LBCS_VAR_DEFNS_FN}"
+extrn_mdl_var_defns_fp="${extrn_mdl_staging_dir}/${EXTRN_MDL_VAR_DEFNS_FN}"
 . ${extrn_mdl_var_defns_fp}
 #
 #-----------------------------------------------------------------------
@@ -140,7 +140,6 @@ case "${CCPP_PHYS_SUITE}" in
     varmap_file="GFSphys_var_map.txt"
     ;;
 #
-  "FV3_RRFS_v1alpha" | \
   "FV3_RRFS_v1beta" | \
   "FV3_GFS_v15_thompson_mynn_lam3km" | \
   "FV3_HRRR" )
@@ -358,12 +357,12 @@ fi
 #
 #-----------------------------------------------------------------------
 #
-num_fhrs="${#EXTRN_MDL_LBC_SPEC_FHRS[@]}"
+num_fhrs="${#EXTRN_MDL_FHRS[@]}"
 for (( i=0; i<${num_fhrs}; i++ )); do
 #
 # Get the forecast hour of the external model.
 #
-  fhr="${EXTRN_MDL_LBC_SPEC_FHRS[$i]}"
+  fhr="${EXTRN_MDL_FHRS[$i]}"
 #
 # Set external model output file name and file type/format.  Note that
 # these are now inputs into chgres_cube.
@@ -442,7 +441,6 @@ list file has not specified for this external LBC model (EXTRN_MDL_NAME_LBCS):
 #
 settings="
 'config': {
- 'fix_dir_input_grid': ${FIXgsm},
  'fix_dir_target_grid': ${FIXLAM},
  'mosaic_file_target_grid': ${FIXLAM}/${CRES}${DOT_OR_USCORE}mosaic.halo$((10#${NH4})).nc,
  'orog_dir_target_grid': ${FIXLAM},
