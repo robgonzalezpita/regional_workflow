@@ -69,7 +69,6 @@ Expected behavior:
 import argparse
 import collections
 import os
-import sys
 
 import f90nml
 import yaml
@@ -138,7 +137,7 @@ def path_ok(arg):
     msg = f'{arg} is not a writable path!'
     raise argparse.ArgumentTypeError(msg)
 
-def parse_args(argv):
+def parse_args():
 
     '''
     Function maintains the arguments accepted by this script. Please see
@@ -193,7 +192,7 @@ def parse_args(argv):
                         action='store_true',
                         help='If provided, suppress all output.',
                         )
-    return parser.parse_args(argv)
+    return parser.parse_args()
 
 def dict_diff(dict1, dict2):
 
@@ -285,14 +284,9 @@ def update_dict(dest, newdict, quiet=False):
                         dest[sect] = {}
                         dest[sect][key] = value
 
-def set_namelist(argv):
+def main(cla):
 
     ''' Using input command line arguments (cla), update a Fortran namelist file. '''
-
-    # parse argumetns
-    cla = parse_args(argv)
-    if cla.config:
-        cla.config, _ = config_exists(cla.config)
 
     # Load base namelist into dict
     nml = f90nml.Namelist()
@@ -330,4 +324,7 @@ def set_namelist(argv):
 
 
 if __name__ == '__main__':
-    set_namelist(sys.argv[1:])
+    cla = parse_args()
+    if cla.config:
+        cla.config, _ = config_exists(cla.config)
+    main(cla)
