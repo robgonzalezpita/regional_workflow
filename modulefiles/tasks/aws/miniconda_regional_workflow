@@ -1,0 +1,4 @@
+#%Module
+
+puts "source /scratch1/miniconda3/etc/profile.d/conda.sh;"
+setenv SRW_ENV regional_workflow

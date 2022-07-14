@@ -1,0 +1,10 @@
+#%Module#####################################################
+## Module file for get_obs_ccpa, get_obs_mrms, and 
+## get_obs_ndas task.
+#############################################################
+
+module purge
+
+source /scratch1/miniconda3/etc/profile.d/conda.sh
+
+setenv SRW_ENV pygraf
