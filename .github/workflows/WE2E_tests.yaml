@@ -42,7 +42,6 @@ jobs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
  
     steps:
-      - name: Set matrix of experiments
       - uses: actions/checkout@v3
         with:
           clean: false
