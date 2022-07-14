@@ -33,6 +33,13 @@ jobs:
         run: | 
           echo 'SRWA Build failed'
           exit 1
+ 
+  save-run-id:
+    name: Save SRWA Build github.run_id
+    run: | 
+      echo ${{ github.event.workflow_run.id }} >> run_id.txt
+      run_id=$(cat run_id.txt)
+      echo $run_id
 
   set-matrix:
     name: Set matrix of tests from machine_suites/ci.txt 
@@ -69,6 +76,8 @@ jobs:
       - name: Submit all experiments in ci.txt to to ./run_WE2E_tests.sh 
         run: | 
           cd ufs-srweather-app-${{ github.event.workflow_run.id }}/regional_workflow/tests/WE2E/
+          module use -a /scratch1/miniconda3/contrib_miniconda3/modulefiles
+          module load miniconda3/4.11.0
           conda activate regional_workflow
           ./run_WE2E_tests.sh \
             tests_file=machine_suites/ci.txt \
