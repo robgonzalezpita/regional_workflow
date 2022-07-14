@@ -25,13 +25,15 @@ defaults:
 jobs:
   
   exit-on-build-failure: 
+    name: Exit this workflow if the SRWA Build failed
     runs-on: self-hosted
     if: ${{ github.event.workflow_run.conclusion == 'failure' }}
     steps:
-      - run: | 
+      - name: Exit 
+        run: | 
           echo 'SRWA Build failed'
           exit 1
-    
+
   set-matrix:
     name: Set matrix of tests from machine_suites/ci.txt 
     runs-on: self-hosted
@@ -40,6 +42,7 @@ jobs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
  
     steps:
+      - name: Set matrix of experiments
       - uses: actions/checkout@v3
         with:
           clean: false
@@ -58,16 +61,17 @@ jobs:
           mkdir -p /scratch1/ci-WE2E-test/${{ github.run_id }}
 
   submit-all-tests:
+    name: Submit experiments to ./run_WE2E_tests.sh
     needs: [ set-matrix, create-experiment-directory ]
     runs-on: self-hosted
     # if: ${{ github.event.label.name == 'ci-aws-intel-WE' }}
 
     steps:
       - name: Submit all experiments in ci.txt to to ./run_WE2E_tests.sh 
-      - run: | 
-         cd ufs-srweather-app-${{ github.event.workflow_run.id }}/regional_workflow/tests/WE2E/
-         conda activate regional_workflow
-         ./run_WE2E_tests.sh \
+        run: | 
+          cd ufs-srweather-app-${{ github.event.workflow_run.id }}/regional_workflow/tests/WE2E/
+          conda activate regional_workflow
+          ./run_WE2E_tests.sh \
             tests_file=machine_suites/ci.txt \
             machine=linux \
             account=account \
@@ -77,6 +81,7 @@ jobs:
             build_mod_fn=build_aws_intel
 
   check-overall-we2e-status:
+    name: Check all of the experiments were submitted
     needs: [ set-matrix, create-experiment-directory, submit-all-tests ]
     runs-on: self-hosted
     # if: ${{ github.event.label.name == 'ci-aws-intel-WE' }}
@@ -88,7 +93,8 @@ jobs:
           ./get_expts_status.sh expts_basedir=/scratch1/ci-WE2E-test/${{ github.run_id }}
     
   check-each-we2e-status: 
-    needs: [ set-matrix, create-expts-directory, submit-all-tests ]
+    name: Check WE2E Status
+    needs: [ set-matrix, create-expts-directory, submit-all-tests, check-overall-we2e-status ]
     runs-on: self-hosted
     # if: ${{ github.event.label.name == 'ci-aws-intel-WE' }}
     strategy:
