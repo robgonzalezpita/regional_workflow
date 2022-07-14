@@ -39,8 +39,8 @@ jobs:
           if [ -n "$new_branch" ]; then
             echo "SRWA_REPO is being set to : ${{ github.actor }}/ufs-srweather-app.git" 
             echo "::set-output name=SRWA_REPO::${{ github.actor }}/ufs-srweather-app"
-            echo "SRWA_BRANCH is being set to : " ${{ github.head_ref }}
-            echo "::set-output name=SRWA_BRANCH::${{ github.head_ref }}"
+            echo "SRWA_BRANCH is being set to : " feature/CI_WE2E_tests
+            echo "::set-output name=SRWA_BRANCH::feature/CI_WE2E_tests"
           else
             echo "There is not a head_ref with the same name as this PR in the SRW App, the default SRW App (NOAA-GSL fork) repository will be used."
             echo "::set-output name=SRWA_REPO::NOAA-GSL/ufs-srweather-app"
