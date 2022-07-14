@@ -4,15 +4,15 @@ name: Build SRWA
 on:
 # Enable the ability to manually run this workflow, as well as when the ci-aws-intel-build label is attached to a PR, and if the PR is updated
   workflow_dispatch:
-  pull_request:
-    branches: 
-      - rrfs_ci 
-      - feature/CI_WE2E_tests
-    types: 
-      - labeled
-  push:
-    branches: 
-      - feature/CI_WE2E_tests
+  # pull_request:
+  #   branches: 
+  #     - rrfs_ci 
+  #     - feature/CI_WE2E_tests
+  #   types: 
+  #     - labeled
+  # push:
+  #   branches: 
+  #     - feature/CI_WE2E_tests
 
 # Use a default login shell which loads intel/oneapi/setvars.sh, and lmod path 
 defaults:
