@@ -93,7 +93,7 @@ jobs:
     
   check-each-we2e-status: 
     name: Check WE2E Status
-    needs: [ set-matrix, create-expts-directory, submit-all-tests, check-overall-we2e-status ]
+    needs: [ set-matrix, create-experiment-directory, submit-all-tests, check-overall-we2e-status ]
     runs-on: self-hosted
     # if: ${{ github.event.label.name == 'ci-aws-intel-WE' }}
     strategy:
