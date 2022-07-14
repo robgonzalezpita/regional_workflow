@@ -10,9 +10,9 @@ on:
   #     - feature/CI_WE2E_tests
   #   types: 
   #     - labeled
-  # push:
-  #   branches: 
-  #     - feature/CI_WE2E_tests
+  push:
+    branches: 
+      - feature/CI_WE2E_tests
 
 # Use a default login shell which loads intel/oneapi/setvars.sh, and lmod path 
 defaults:
@@ -24,7 +24,7 @@ jobs:
   Set_Repo_and_Branch:
     name: Set the SRWA repo and branch names  
     runs-on: self-hosted 
-    if: ${{ github.event.label.name == 'ci-aws-intel-build' }}
+    # if: ${{ github.event.label.name == 'ci-aws-intel-build' }}
     outputs: 
       SRWA_REPO: ${{ steps.set_repo.outputs.SRWA_REPO }}
       SRWA_BRANCH: ${{ steps.set_repo.outputs.SRWA_BRANCH }}
@@ -51,7 +51,7 @@ jobs:
   Clone_SRWA:
     name: Clone SRWA and move into parent directory
     runs-on: self-hosted 
-    if: ${{ github.event.label.name == 'ci-aws-intel-build' }}
+    # if: ${{ github.event.label.name == 'ci-aws-intel-build' }}
     needs: [ Set_Repo_and_Branch ]
     
     steps:
@@ -83,7 +83,7 @@ jobs:
   Build_SRWA:
     name: Build SRWA 
     runs-on: self-hosted
-    if: ${{ github.event.label.name == 'ci-aws-intel-build' }}
+    # if: ${{ github.event.label.name == 'ci-aws-intel-build' }}
     needs: [ Set_Repo_and_Branch, Clone_SRWA, Configure_SRWA ]
     steps:
       - name: Build Short Range Weather App using test/build.sh
@@ -94,7 +94,7 @@ jobs:
   Build_Status:
     name: Check Build Sucess or Failure 
     runs-on: self-hosted 
-    if: ${{ github.event.label.name == 'ci-aws-intel-build' }}
+    # if: ${{ github.event.label.name == 'ci-aws-intel-build' }}
     needs: [ Set_Repo_and_Branch, Clone_SRWA, Configure_SRWA, Build_SRWA ]
     
     steps:
