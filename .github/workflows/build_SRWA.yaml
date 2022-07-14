@@ -65,7 +65,7 @@ jobs:
   Configure_SRWA:
     name: Checkout_Externals and replace with 'this' version of regional_workflow
     runs-on: self-hosted 
-    if: ${{ github.event.label.name == 'ci-aws-intel-build' }}
+    # if: ${{ github.event.label.name == 'ci-aws-intel-build' }}
     needs: [ Set_Repo_and_Branch, Clone_SRWA ]
 
     steps:

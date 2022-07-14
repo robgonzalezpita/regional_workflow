@@ -81,7 +81,7 @@ jobs:
     runs-on: self-hosted
     # if: ${{ github.event.label.name == 'ci-aws-intel-WE' }}
     steps:
-      - name:
+      - name: Check the status of all experiments
         run: |
           echo "Check Workflow Generation/Status"
           cd ufs-srweather-app-${{ github.event.workflow_run.id }}/regional_workflow/tests/WE2E/
