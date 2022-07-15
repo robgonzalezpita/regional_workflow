@@ -10,9 +10,9 @@ on:
   #     - feature/CI_WE2E_tests
   #   types: 
   #     - labeled
-  push:
-    branches: 
-      - feature/CI_WE2E_tests
+  # push:
+  #   branches: 
+  #     - feature/CI_WE2E_tests
 
 # Use a default login shell which loads intel/oneapi/setvars.sh, and lmod path 
 defaults:

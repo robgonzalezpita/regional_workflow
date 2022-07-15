@@ -104,7 +104,7 @@ jobs:
           conda activate regional_workflow
           ./run_WE2E_tests.sh \
             tests_file=machine_suites/ci.txt \
-            machine=linux \
+            machine=aws \
             account=account \
             expt_basedir=/scratch1/ci-WE2E-test/${{ github.run_id }} \
             exec_subdir=bin_intel/bin \
