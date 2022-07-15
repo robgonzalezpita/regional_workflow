@@ -11,9 +11,9 @@ on:
 #     branches:
 #       - 'rrfs_ci'
 #  push:
-#   branches: [ feature/ci-WE2E-tests ]
+#   branches: [ feature/CI_WE2E_tests ]
 #  pull_request:
-#    branches: [ rrfs_ci, feature/ci-WE2E-tests ]
+#    branches: [ rrfs_ci, feature/CI_WE2E_tests ]
 #    types: 
 #      - labeled
 
@@ -34,15 +34,37 @@ jobs:
           echo 'SRWA Build failed'
           exit 1
  
-  save-run-id:
-    name: Save SRWA Build github.run_id
-    run: | 
-      echo ${{ github.event.workflow_run.id }} >> run_id.txt
-      run_id=$(cat run_id.txt)
-      echo $run_id
+  capture-srwa-build-workflow-run-id:
+    name: Save workflow_run id of SRWA build 
+    # only save the SRWA build run_id if this is event that triggered this workflow 
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: self-hosted
+
+    steps: 
+      - uses: actions/checkout@v3
+        with:
+          clean: false
+      - name: Save SRWA run_id  
+        run: |
+          echo ${{ github.event.workflow_run.id }} > ${{ github.workspace}}/run_id.txt 
+
+  # Run id is used for re-running WE2E tests on updates to a PR when re-buidling SRWA isn't required
+  get-run-id:
+    name: Get the GHA run_id of the SRWA build to pass to sequential jobs 
+    runs-on: self-hosted
+    outputs: 
+      run-id: ${{ steps.get_run_id.outputs.run-id}}
+
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          clean: false
+      - id: get_run_id
+        run: echo "::set-output name=run-id::$(cat ${{ github.workspace}}/run_id.txt)"
 
   set-matrix:
     name: Set matrix of tests from machine_suites/ci.txt 
+    needs: get-run-id
     runs-on: self-hosted
     # if: ${{ github.event.label.name == 'ci-aws-intel-WE' }}
     outputs:
@@ -54,13 +76,14 @@ jobs:
           clean: false
       - id: set-matrix
         run: | 
-          echo "::set-output name=matrix::$(cat ufs-srweather-app-${{ github.event.workflow_run.id }}/regional_workflow/tests/WE2E/machine_suites/ci.txt | jq -R -s -c 'split("\n")[:-1]')"
+          echo "::set-output name=matrix::$(cat ufs-srweather-app-${{ needs.get-run-id.outputs.run-id }}/regional_workflow/tests/WE2E/machine_suites/ci.txt | jq -R -s -c 'split("\n")[:-1]')"
           echo 
 
   create-experiment-directory:
     needs: [ set-matrix ]
     runs-on: self-hosted
     # if: ${{ github.event.label.name == 'ci-aws-intel-WE' }}
+    # We use THIS workflow's run id to set a new experiment directory, not the SRWA build workflow run_id 
     steps:
       - name: Create experiment directory 
         run: |
@@ -68,14 +91,14 @@ jobs:
 
   submit-all-tests:
     name: Submit experiments to ./run_WE2E_tests.sh
-    needs: [ set-matrix, create-experiment-directory ]
+    needs: [ set-matrix, create-experiment-directory, get-run-id ]
     runs-on: self-hosted
     # if: ${{ github.event.label.name == 'ci-aws-intel-WE' }}
 
     steps:
       - name: Submit all experiments in ci.txt to to ./run_WE2E_tests.sh 
         run: | 
-          cd ufs-srweather-app-${{ github.event.workflow_run.id }}/regional_workflow/tests/WE2E/
+          cd ufs-srweather-app-${{ needs.get-run-id.outputs.run-id }}/regional_workflow/tests/WE2E/
           module use -a /scratch1/miniconda3/contrib_miniconda3/modulefiles
           module load miniconda3/4.11.0
           conda activate regional_workflow
@@ -90,19 +113,19 @@ jobs:
 
   check-overall-we2e-status:
     name: Check all of the experiments were submitted
-    needs: [ set-matrix, create-experiment-directory, submit-all-tests ]
+    needs: [ set-matrix, create-experiment-directory, submit-all-tests, get-run-id ]
     runs-on: self-hosted
     # if: ${{ github.event.label.name == 'ci-aws-intel-WE' }}
     steps:
       - name: Check the status of all experiments
         run: |
           echo "Check Workflow Generation/Status"
-          cd ufs-srweather-app-${{ github.event.workflow_run.id }}/regional_workflow/tests/WE2E/
+          cd ufs-srweather-app-${{ needs.get-run-id.outputs.run-id }}/regional_workflow/tests/WE2E/
           ./get_expts_status.sh expts_basedir=/scratch1/ci-WE2E-test/${{ github.run_id }}
     
   check-each-we2e-status: 
     name: Check WE2E Status
-    needs: [ set-matrix, create-experiment-directory, submit-all-tests, check-overall-we2e-status ]
+    needs: [ set-matrix, create-experiment-directory, submit-all-tests, check-overall-we2e-status, get-run-id ]
     runs-on: self-hosted
     # if: ${{ github.event.label.name == 'ci-aws-intel-WE' }}
     strategy:
@@ -120,5 +143,5 @@ jobs:
       - name: Exit on SUCCESS/FAILURE
         run: | 
           echo "Execute script that checks for workflow status to change from IN PROGRESS to SUCCESS/FAILURE"
-          cd ufs-srweather-app-${{ github.event.workflow_run.id }}/regional_workflow/tests/WE2E/
+          cd ufs-srweather-app-${{ needs.get-run-id.outputs.run-id }}/regional_workflow/tests/WE2E/
           ./get_single_expt_status.sh expts_basedir=/scratch1/ci-WE2E-test/${{ github.run_id }} expt_name=${{ matrix.WE2Etest }}
