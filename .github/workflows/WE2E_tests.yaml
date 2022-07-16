@@ -96,7 +96,7 @@ jobs:
     # if: ${{ github.event.label.name == 'ci-aws-intel-WE' }}
 
     steps:
-      - name: Submit all experiments in ci.txt to to ./run_WE2E_tests.sh 
+      - name: Submit all experiments (WE2E tests) 
         run: | 
           cd ufs-srweather-app-${{ needs.get-run-id.outputs.run-id }}/regional_workflow/tests/WE2E/
           module use -a /scratch1/miniconda3/contrib_miniconda3/modulefiles
@@ -124,7 +124,7 @@ jobs:
           ./get_expts_status.sh expts_basedir=/scratch1/ci-WE2E-test/${{ github.run_id }}
     
   check-each-we2e-status: 
-    name: Check WE2E Status
+    name: Check ${{ matrix.WE2Etest }} Status
     needs: [ set-matrix, create-experiment-directory, submit-all-tests, check-overall-we2e-status, get-run-id ]
     runs-on: self-hosted
     # if: ${{ github.event.label.name == 'ci-aws-intel-WE' }}

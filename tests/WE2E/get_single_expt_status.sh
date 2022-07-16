@@ -4,15 +4,15 @@
 #-----------------------------------------------------------------------
 #
 # This script updates and reports back the workflow status of a single
-# forecast experiments under a specified base directory (expts_basedir).  
+# forecast experiment under a specified base directory (expts_basedir).  
 # It must be supplied two arguments, the full path to the
 # experiments base directory & the experiment name.  
 #
-# This script is used to produce exit codes for each WE2E test in the 
-# Continous Integration Environment.
+# This script is used to produce exit codes for each WE2E test submitted 
+# as a part of Continous Integration Pipeline.
 # 
 # For the supplied experiment, it calls the workflow (re)launch script to 
-# update the status of the workflow and prints the status out to screen.
+# update the status of the workflow and prints the status.
 # 
 #
 #-----------------------------------------------------------------------
@@ -213,15 +213,12 @@ Checking workflow status of experiment \"${expt_name}\" ..."
 #
   cd_vrfy "${expt_subdir}"
 
-active_test=TRUE
-
 wflow_status="none"
 
 while [[ "${wflow_status}" == "Workflow status:  IN PROGRESS" || "${wflow_status}" == "none" ]]; do
 
   launch_msg=$( "${launch_wflow_fn}" 2>&1 )
   log_tail=$( tail -n ${num_log_lines} "${launch_wflow_log_fn}" )
-
 
   # The "tail -1" is to get only the last occurrence of "Workflow status"
   wflow_status=$( printf "${log_tail}" | grep "Workflow status:" | tail -1 )
@@ -242,12 +239,10 @@ while [[ "${wflow_status}" == "Workflow status:  IN PROGRESS" || "${wflow_status
     break
 
   else
-    print_info_msg "Waiting 2 minutes, then checking again"
+    print_info_msg "Waiting 2 minutes, then checking Worfklow Status again"
     sleep 120
   fi
 
   print_info_msg $separator
 
 done
-
-
