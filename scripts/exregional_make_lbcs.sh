@@ -140,7 +140,6 @@ case "${CCPP_PHYS_SUITE}" in
     varmap_file="GFSphys_var_map.txt"
     ;;
 #
-  "FV3_RRFS_v1alpha" | \
   "FV3_RRFS_v1beta" | \
   "FV3_GFS_v15_thompson_mynn_lam3km" | \
   "FV3_HRRR" )
@@ -442,7 +441,6 @@ list file has not specified for this external LBC model (EXTRN_MDL_NAME_LBCS):
 #
 settings="
 'config': {
- 'fix_dir_input_grid': ${FIXgsm},
  'fix_dir_target_grid': ${FIXLAM},
  'mosaic_file_target_grid': ${FIXLAM}/${CRES}${DOT_OR_USCORE}mosaic.halo$((10#${NH4})).nc,
  'orog_dir_target_grid': ${FIXLAM},

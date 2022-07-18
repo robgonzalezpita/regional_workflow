@@ -3,6 +3,7 @@
 function file_location() {
 
   # Return the default location of external model files on disk
+  # Hera does not currently have any files staged on disk.
 
   local external_file_fmt external_model location
 
@@ -10,13 +11,6 @@ function file_location() {
   external_file_fmt=${2}
 
   location=""
-  case ${external_model} in
-
-    "FV3GFS")
-      location='/scratch1/NCEPDEV/rstprod/com/gfs/prod/gfs.${yyyymmdd}/${hh}/atmos'
-      ;;
-
-  esac
   echo ${location:-}
 
 }
@@ -66,8 +60,8 @@ RUN_CMD_FCST="srun"
 RUN_CMD_POST="srun"
 
 # MET/METplus-Related Paths
-MET_INSTALL_DIR=${MET_INSTALL_DIR:-"/contrib/met/10.0.0"}
-METPLUS_PATH=${METPLUS_PATH:-"/contrib/METplus/METplus-4.0.0"}
+MET_INSTALL_DIR=${MET_INSTALL_DIR:-"/contrib/met/10.1.1"}
+METPLUS_PATH=${METPLUS_PATH:-"/contrib/METplus/METplus-4.1.1"}
 CCPA_OBS_DIR=${CCPA_OBS_DIR:-"${staged_data_dir}/obs_data/ccpa/proc"}
 MRMS_OBS_DIR=${MRMS_OBS_DIR:-"${staged_data_dir}/obs_data/mrms/proc"}
 NDAS_OBS_DIR=${NDAS_OBS_DIR:-"${staged_data_dir}/obs_data/ndas/proc"}
