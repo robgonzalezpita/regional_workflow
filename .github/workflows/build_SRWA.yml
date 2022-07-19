@@ -1,0 +1,108 @@
+# This workflow Builds the UFS SRWEATHER APP
+name: Build SRWA
+
+on:
+# Enable the ability to manually run this workflow, as well as when the ci-aws-intel-build label is attached to a PR, and if the PR is updated
+  workflow_dispatch:
+  pull_request:
+    branches: 
+      - rrfs_ci 
+    types: 
+      - labeled
+
+# Use a default login shell which loads intel/oneapi/setvars.sh, and lmod path 
+defaults:
+  run:
+    shell: bash -l {0}
+
+jobs:
+  
+  Set_Repo_and_Branch:
+    name: Set the SRWA repo and branch names  
+    runs-on: self-hosted 
+    if: ${{ github.event.label.name == 'ci-aws-intel-build' }}
+    outputs: 
+      SRWA_REPO: ${{ steps.set_repo.outputs.SRWA_REPO }}
+      SRWA_BRANCH: ${{ steps.set_repo.outputs.SRWA_BRANCH }}
+      
+  # If a developer submits a concurrent PR to the App, set the SRWA_REPO & SRWA_BRANCH env variables to their repo and branch,
+  # if not, set the outputs to the rrfs_ci branch of NOAA-GSL/ufs-srweather-app  
+    steps:
+      - name: Set Repo and Branch Variables 
+        id: set_repo
+        run: |
+          new_branch=`git ls-remote https://github.com/${{ github.actor }}/ufs-srweather-app.git ${{ github.head_ref }}`
+          if [ -n "$new_branch" ]; then
+            echo "SRWA_REPO is being set to : ${{ github.actor }}/ufs-srweather-app.git" 
+            echo "::set-output name=SRWA_REPO::${{ github.actor }}/ufs-srweather-app"
+            echo "SRWA_BRANCH is being set to : " ${{ github.head_ref }}
+            echo "::set-output name=SRWA_BRANCH::${{ github.head_ref }}"
+          else
+            echo "There is not a head_ref with the same name as this PR in the SRW App, the default SRW App (NOAA-GSL fork) repository will be used."
+            echo "::set-output name=SRWA_REPO::NOAA-GSL/ufs-srweather-app"
+            echo "There is not a similar branch name associated with this PR in the SRW App, the default SRWA App branch (rrfs_ci) will be used."
+            echo "::set-output name=SRWA_BRANCH::rrfs_ci"
+          fi
+
+  # Clone the SRWA - with github.run_id in filepath to avoid multiple PR Conflicts, & track build tests by their run_id
+  Clone_SRWA:
+    name: Clone SRWA and move into parent directory
+    runs-on: self-hosted 
+    if: ${{ github.event.label.name == 'ci-aws-intel-build' }}
+    needs: [ Set_Repo_and_Branch ]
+    
+    steps:
+      - name: Clone SRWA 
+        uses: actions/checkout@v3
+        with: 
+          repository: ${{ needs.Set_Repo_and_Branch.outputs.SRWA_REPO }}
+          ref: ${{ needs.Set_Repo_and_Branch.outputs.SRWA_BRANCH }}
+          path: ufs-srweather-app-${{ github.run_id }}
+
+  Configure_SRWA:
+    name: Checkout_Externals and replace with 'this' version of regional_workflow
+    runs-on: self-hosted 
+    if: ${{ github.event.label.name == 'ci-aws-intel-build' }}
+    needs: [ Set_Repo_and_Branch, Clone_SRWA ]
+
+    steps:
+      - name: Checkout Externals & Delete Regional Workflow
+        run: |
+          cd ufs-srweather-app-${{ github.run_id }}
+          ./manage_externals/checkout_externals
+          rm -rf regional_workflow
+
+      - name: Checkout 'this' version of Regional Workflow
+        uses: actions/checkout@v3
+        with:
+          path: ufs-srweather-app-${{ github.run_id }}/regional_workflow
+          clean: false
+  
+  Build_SRWA:
+    name: Build SRWA 
+    runs-on: self-hosted
+    if: ${{ github.event.label.name == 'ci-aws-intel-build' }}
+    needs: [ Set_Repo_and_Branch, Clone_SRWA, Configure_SRWA ]
+    steps:
+      - name: Build Short Range Weather App using test/build.sh
+        run: |
+          cd ufs-srweather-app-${{ github.run_id }}/test/
+          ./build.sh aws 2>&1 | tee build_test.out
+  
+  Build_Status:
+    name: Check Build Sucess or Failure 
+    runs-on: self-hosted 
+    if: ${{ github.event.label.name == 'ci-aws-intel-build' }}
+    needs: [ Set_Repo_and_Branch, Clone_SRWA, Configure_SRWA, Build_SRWA ]
+    
+    steps:
+      - name: Get build status
+        run: |
+          cd ufs-srweather-app-${{ github.run_id }}/test/
+          status=`tail -1 build_test.out |cut -d ' ' -f 3-`
+          if [ $status == PASS ]; then
+            exit 0
+          else 
+            exit 1
+          fi
+
