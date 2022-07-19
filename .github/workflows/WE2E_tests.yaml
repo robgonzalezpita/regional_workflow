@@ -24,7 +24,7 @@ jobs:
   exit-on-build-failure: 
     name: Exit this workflow if the SRWA Build failed
     runs-on: self-hosted
-    if: ${{ github.event.workflow_run.conclusion == 'failure' && github.event.label.name == 'ci-aws-intel-WE' }}
+    if: ${{ github.event.workflow_run.conclusion == 'failure' }}
     steps:
       - name: Exit 
         run: | 
@@ -33,8 +33,8 @@ jobs:
  
   capture-srwa-build-workflow-run-id:
     name: Save workflow_run id of SRWA build 
-    # only save the SRWA build run_id if this is event that triggered this workflow 
-    if: ${{ github.event.workflow_run.conclusion == 'success' && github.event.label.name == 'ci-aws-intel-WE' }}
+    # Only save the SRWA build run_id if the event that triggered this workflow is Build SRWA
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: self-hosted
 
     steps: 
@@ -49,7 +49,7 @@ jobs:
   get-run-id:
     name: Get the GHA run_id of the SRWA build to pass to sequential jobs 
     runs-on: self-hosted
-    if: ${{ github.event.label.name == 'ci-aws-intel-WE' }}
+    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event.label.name == 'ci-aws-intel-WE' }}
     outputs: 
       run-id: ${{ steps.get_run_id.outputs.run-id}}
 
@@ -64,7 +64,7 @@ jobs:
     name: Set matrix of tests from machine_suites/ci.txt 
     needs: get-run-id
     runs-on: self-hosted
-    if: ${{ github.event.label.name == 'ci-aws-intel-WE' }}
+    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event.label.name == 'ci-aws-intel-WE' }}
     outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
  
@@ -80,7 +80,7 @@ jobs:
   create-experiment-directory:
     needs: [ set-matrix ]
     runs-on: self-hosted
-    if: ${{ github.event.label.name == 'ci-aws-intel-WE' }}
+    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event.label.name == 'ci-aws-intel-WE' }}
     # We use THIS workflow's run id to set a new experiment directory, not the SRWA build workflow run_id 
     steps:
       - name: Create experiment directory 
@@ -91,7 +91,7 @@ jobs:
     name: Submit experiments to ./run_WE2E_tests.sh
     needs: [ set-matrix, create-experiment-directory, get-run-id ]
     runs-on: self-hosted
-    if: ${{ github.event.label.name == 'ci-aws-intel-WE' }}
+    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event.label.name == 'ci-aws-intel-WE' }}
 
     steps:
       - name: Submit all experiments (WE2E tests) 
@@ -113,7 +113,7 @@ jobs:
     name: Check all of the experiments were submitted
     needs: [ set-matrix, create-experiment-directory, submit-all-tests, get-run-id ]
     runs-on: self-hosted
-    if: ${{ github.event.label.name == 'ci-aws-intel-WE' }}
+    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event.label.name == 'ci-aws-intel-WE' }}
     steps:
       - name: Check the status of all experiments
         run: |
@@ -125,7 +125,7 @@ jobs:
     name: Check ${{ matrix.WE2Etest }} Status
     needs: [ set-matrix, create-experiment-directory, submit-all-tests, check-overall-we2e-status, get-run-id ]
     runs-on: self-hosted
-    if: ${{ github.event.label.name == 'ci-aws-intel-WE' }}
+    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event.label.name == 'ci-aws-intel-WE' }}
     strategy:
         fail-fast: false
         matrix:
