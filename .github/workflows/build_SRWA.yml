@@ -94,15 +94,32 @@ jobs:
     runs-on: self-hosted 
     if: ${{ github.event.label.name == 'ci-aws-intel-build' }}
     needs: [ Set_Repo_and_Branch, Clone_SRWA, Configure_SRWA, Build_SRWA ]
-    
+    outputs: 
+      build-success: ${{ steps.status.outputs.build-success }}
+
     steps:
       - name: Get build status
+        id: status
         run: |
           cd ufs-srweather-app-${{ github.run_id }}/test/
           status=`tail -1 build_test.out |cut -d ' ' -f 3-`
           if [ $status == PASS ]; then
+            echo "::set-output name=build-success::success"
             exit 0
           else 
+            echo "::set-output name=build-success::failure"
             exit 1
           fi
 
+  capture_workflow_run-id:
+    name: Save workflow_run id of SRWA build 
+    needs: Build_Status
+    if: ${{ github.event.label.name == 'ci-aws-intel-build' && needs.Build_Status.outputs.build-success == 'success' }}
+    runs-on: self-hosted
+    steps: 
+      - uses: actions/checkout@v3
+        with:
+          clean: false
+      - name: Save SRWA run_id  
+        run: |
+          echo ${{ github.run_id }} > ${{ github.workspace}}/run_id.txt
