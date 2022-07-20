@@ -29,7 +29,14 @@ jobs:
         with:
           clean: false
       - id: get_run_id
-        run: echo "::set-output name=run-id::$(cat ${{ github.workspace}}/run_id.txt)"
+        run: |
+          FILE="${{ github.workspace }}/run_id.txt"
+          if [[ -f "$FILE"]]; then 
+            echo "::set-output name=run-id::$(cat ${{ github.workspace}}/run_id.txt)"
+          else 
+            echo "SRWA Build failed"
+            exit 1 
+          fi
 
   set-matrix:
     name: Set matrix of tests from machine_suites/ci.txt 
