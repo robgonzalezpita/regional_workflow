@@ -8,6 +8,8 @@ on:
     workflows: [Build SRWA]
     types: 
       - completed
+    branches:
+      - rrfs_ci
   pull_request:
     branches:
       - rrfs_ci
