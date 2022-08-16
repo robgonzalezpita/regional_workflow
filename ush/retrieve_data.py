@@ -84,7 +84,7 @@ def copy_file(source, destination):
 
     # Using subprocess here because system copy is much faster than
     # python copy options.
-    cmd = f'ln -sf {source} {destination}'
+    cmd = f'cp {source} {destination}'
     logging.info(f'Running command: \n {cmd}')
     try:
         subprocess.run(cmd,

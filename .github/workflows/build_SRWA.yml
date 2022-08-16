@@ -16,17 +16,12 @@ defaults:
     shell: bash -l {0}
 
 jobs:
-  
-  Set_Repo_and_Branch:
-    name: Set the SRWA repo and branch names  
+
+  Build_SRWA:
+    name: Build the ufs-srweather-app  
     runs-on: self-hosted 
     if: ${{ github.event.label.name == 'ci-aws-intel-build' }}
-    outputs: 
-      SRWA_REPO: ${{ steps.set_repo.outputs.SRWA_REPO }}
-      SRWA_BRANCH: ${{ steps.set_repo.outputs.SRWA_BRANCH }}
-      
-  # If a developer submits a concurrent PR to the App, set the SRWA_REPO & SRWA_BRANCH env variables to their repo and branch,
-  # if not, set the outputs to the rrfs_ci branch of NOAA-GSL/ufs-srweather-app  
+
     steps:
       - name: Set Repo and Branch Variables 
         id: set_repo
@@ -44,28 +39,13 @@ jobs:
             echo "::set-output name=SRWA_BRANCH::rrfs_ci"
           fi
 
-  # Clone the SRWA - with github.run_id in filepath to avoid multiple PR Conflicts, & track build tests by their run_id
-  Clone_SRWA:
-    name: Clone SRWA and move into parent directory
-    runs-on: self-hosted 
-    if: ${{ github.event.label.name == 'ci-aws-intel-build' }}
-    needs: [ Set_Repo_and_Branch ]
-    
-    steps:
       - name: Clone SRWA 
         uses: actions/checkout@v3
         with: 
-          repository: ${{ needs.Set_Repo_and_Branch.outputs.SRWA_REPO }}
-          ref: ${{ needs.Set_Repo_and_Branch.outputs.SRWA_BRANCH }}
+          repository: ${{ steps.set_repo.outputs.SRWA_REPO }}
+          ref: ${{ steps.set_repo.outputs.SRWA_BRANCH }}
           path: ufs-srweather-app-${{ github.run_id }}
 
-  Configure_SRWA:
-    name: Checkout_Externals and replace with 'this' version of regional_workflow
-    runs-on: self-hosted 
-    if: ${{ github.event.label.name == 'ci-aws-intel-build' }}
-    needs: [ Set_Repo_and_Branch, Clone_SRWA ]
-
-    steps:
       - name: Checkout Externals & Delete Regional Workflow
         run: |
           cd ufs-srweather-app-${{ github.run_id }}
@@ -78,48 +58,20 @@ jobs:
           path: ufs-srweather-app-${{ github.run_id }}/regional_workflow
           clean: false
   
-  Build_SRWA:
-    name: Build SRWA 
-    runs-on: self-hosted
-    if: ${{ github.event.label.name == 'ci-aws-intel-build' }}
-    needs: [ Set_Repo_and_Branch, Clone_SRWA, Configure_SRWA ]
-    steps:
       - name: Build Short Range Weather App using test/build.sh
         run: |
           cd ufs-srweather-app-${{ github.run_id }}/test/
           ./build.sh aws 2>&1 | tee build_test.out
   
-  Build_Status:
-    name: Check Build Sucess or Failure 
-    runs-on: self-hosted 
-    if: ${{ github.event.label.name == 'ci-aws-intel-build' }}
-    needs: [ Set_Repo_and_Branch, Clone_SRWA, Configure_SRWA, Build_SRWA ]
-    outputs: 
-      build-success: ${{ steps.status.outputs.build-success }}
-
-    steps:
-      - name: Get build status
+      - name: Get build status & Save workflow_run id of SRWA build
         id: status
         run: |
           cd ufs-srweather-app-${{ github.run_id }}/test/
           status=`tail -1 build_test.out |cut -d ' ' -f 3-`
           if [ $status == PASS ]; then
-            echo "::set-output name=build-success::success"
+            echo ${{ github.run_id }} > ${{ github.workspace}}/run_id.txt
             exit 0
           else 
-            echo "::set-output name=build-success::failure"
             exit 1
           fi
 
-  capture_workflow_run-id:
-    name: Save workflow_run id of SRWA build 
-    needs: Build_Status
-    if: ${{ github.event.label.name == 'ci-aws-intel-build' && needs.Build_Status.outputs.build-success == 'success' }}
-    runs-on: self-hosted
-    steps: 
-      - uses: actions/checkout@v3
-        with:
-          clean: false
-      - name: Save SRWA run_id  
-        run: |
-          echo ${{ github.run_id }} > ${{ github.workspace}}/run_id.txt

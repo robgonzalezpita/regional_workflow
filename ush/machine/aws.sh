@@ -58,14 +58,6 @@ RUN_CMD_UTILS="srun --mpi=pmi2"
 RUN_CMD_FCST='mpirun -np $SLURM_NTASKS'
 RUN_CMD_POST="srun --mpi=pmi2"
 
-# MET/METplus-Related Paths
-MET_INSTALL_DIR=${MET_INSTALL_DIR:-"/contrib/met/10.0.0"}
-METPLUS_PATH=${METPLUS_PATH:-"/contrib/METplus/METplus-4.0.0"}
-CCPA_OBS_DIR=${CCPA_OBS_DIR:-"${staged_data_dir}/obs_data/ccpa/proc"}
-MRMS_OBS_DIR=${MRMS_OBS_DIR:-"${staged_data_dir}/obs_data/mrms/proc"}
-NDAS_OBS_DIR=${NDAS_OBS_DIR:-"${staged_data_dir}/obs_data/ndas/proc"}
-MET_BIN_EXEC=${MET_BIN_EXEC:-"bin"}
-
 # Test Data Locations
 TEST_COMIN="${staged_data_dir}/COMGFS"
 TEST_PREGEN_BASEDIR="${staged_data_dir}/FV3LAM_pregen"
