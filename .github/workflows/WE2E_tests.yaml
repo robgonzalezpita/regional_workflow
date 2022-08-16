@@ -27,10 +27,7 @@ jobs:
 
     steps:
       - name: Fail safe for SRW App Build Failure, and set the run_id for use in path of SRWA build 
-      - uses: actions/checkout@v3
-        with:
-          clean: false
-      - id: get_run_id
+        id: get_run_id
         run: |
           FILE="${{ github.workspace }}/run_id.txt"
           if [[ -f "$FILE"]]; then 
@@ -41,10 +38,7 @@ jobs:
           fi
 
       - name: Set matrix of tests from machine_suites/ci.txt
-      - uses: actions/checkout@v3
-        with:
-          clean: false
-      - id: set-matrix
+        id: set-matrix
         run: | 
           echo "::set-output name=matrix::$(cat ufs-srweather-app-${{ steps.get-run-id.outputs.run-id }}/regional_workflow/tests/WE2E/machine_suites/ci.txt | jq -R -s -c 'split("\n")[:-1]')"
           echo 
