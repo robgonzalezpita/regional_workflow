@@ -18,7 +18,7 @@ jobs:
   
   # The run_id is only available in this worfklow if the workflow which builds the SRWA in build_SRWA.yml was successful.
   Configure_and_Submit_WE2E_tests:
-    name: Configure matrix, 
+    name: Configure experiment matrix & submit WE2E tests
     runs-on: self-hosted
     if: ${{ github.event.label.name == 'ci-aws-intel-WE' }}
     outputs: 
@@ -30,7 +30,7 @@ jobs:
         id: get_run_id
         run: |
           FILE="${{ github.workspace }}/run_id.txt"
-          if [[ -f "$FILE"]]; then 
+          if [[ -f "$FILE" ]]; then 
             echo "::set-output name=run-id::$(cat ${{ github.workspace}}/run_id.txt)"
           else 
             echo "SRWA Build failed"
@@ -69,7 +69,7 @@ jobs:
           ./get_expts_status.sh expts_basedir=/scratch1/ci-WE2E-test/${{ github.run_id }}
     
   check-each-we2e-status: 
-    name: Check ${{ matrix.WE2Etest }} Status
+    name: Check status of all WE2E Runs
     needs: [ Configure_and_Submit_WE2E_tests ]
     runs-on: self-hosted
     if: ${{ github.event.label.name == 'ci-aws-intel-WE' }}
