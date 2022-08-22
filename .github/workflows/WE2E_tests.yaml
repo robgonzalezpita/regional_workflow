@@ -16,7 +16,7 @@ defaults:
 
 jobs:
   
-  # The run_id is only available in this worfklow if the workflow which builds the SRWA in build_SRWA.yml was successful.
+# The run_id is only available in this worfklow if the workflow which builds the SRWA in build_SRWA.yml was successful.
   Configure_and_Submit_WE2E_tests:
     name: Configure experiment matrix & submit WE2E tests
     runs-on: self-hosted
@@ -26,7 +26,10 @@ jobs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
 
     steps:
-      - name: Fail safe for SRW App Build Failure, and set the run_id for use in path of SRWA build 
+# As this currently stands, there is no capability to test concurrent PRs via this workflow (& build.SRWA.yaml), a codeowner must run the C.I. framework one PR at a time.
+# Currently, there is no reliable way of obtaining a PR number from a workflow not triggered by a PR event. (We are triggering workflows by attaching labels).         
+# A future resolution would be to set the PR number as part of the path where the SRW App is cloned and built (in build.SRWA.yaml), then obtain the PR number from this workflow, and enter the appropriate directory containing the associated build.
+      - name: Set the run_id for use in path of SRWA build (Fail safe for SRW App Build Failure)
         id: get_run_id
         run: |
           FILE="${{ github.workspace }}/run_id.txt"
